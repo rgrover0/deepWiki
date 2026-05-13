@@ -84,6 +84,7 @@ def update_qdrant_for_class(cls: dict, summary: str, point_id: int):
 
     vector = embed_text(enriched_text)
     qdrant = get_client()
+    print(qdrant.get_collections())
 
     qdrant.upsert(
         collection_name=COLLECTION,

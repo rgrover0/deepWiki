@@ -17,3 +17,6 @@ groq
 langchain-groq
 pandas
 anthropic
+torch
+javalang
+requests

@@ -1,15 +1,17 @@
-from neo4j import GraphDatabase
 import os
+from neo4j import GraphDatabase
 from dotenv import load_dotenv
 
 load_dotenv()
 
-
 def get_driver():
-    return GraphDatabase.driver(
-        os.getenv("NEO4J_URI"),
-        auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-    )
+    uri      = os.getenv("NEO4J_URI")
+    user     = os.getenv("NEO4J_USER", "neo4j")
+    password = os.getenv("NEO4J_PASSWORD")
+
+    # AuraDB uses neo4j+s:// (SSL auto-handled)
+    # Local uses bolt:// — both work with same code
+    return GraphDatabase.driver(uri, auth=(user, password))
 
 
 def setup_schema(driver):

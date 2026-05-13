@@ -14,10 +14,23 @@ VECTOR_SIZE  = 384  # all-MiniLM-L6-v2 output size
 
 
 def get_client() -> QdrantClient:
-    return QdrantClient(
-        host=os.getenv("QDRANT_HOST", "localhost"),
-        port=int(os.getenv("QDRANT_PORT", 6333))
-    )
+    """Supports both local Podman and Qdrant Cloud."""
+    url     = os.getenv("QDRANT_HOST")
+    api_key = os.getenv("QDRANT_API_KEY")
+
+    if url and api_key:
+        # Qdrant Cloud
+        qdrant_client = QdrantClient(url=url, api_key=api_key)
+        print(qdrant_client.get_collections())
+        return qdrant_client
+    else:
+        # Local Podman/Docker fallback
+        qdrant_client_local = QdrantClient(
+            host=os.getenv("QDRANT_HOST", "localhost"),
+            port=int(os.getenv("QDRANT_PORT", 6333))
+        )
+        print(qdrant_client_local.get_collections())
+        return qdrant_client_local
 
 
 def setup_collection(client: QdrantClient):

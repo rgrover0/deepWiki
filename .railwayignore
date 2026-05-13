@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.env
+repos/
+output/
+pipeline/delta/
+pipeline/comparison/
+run_iteration*.py
+*.pptx
+*.md
+.git/

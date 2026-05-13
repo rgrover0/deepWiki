@@ -34,10 +34,21 @@ except Exception as e:
 # 3. Qdrant
 try:
     from qdrant_client import QdrantClient
-    client = QdrantClient(
-        host=os.getenv("QDRANT_HOST"),
-        port=int(os.getenv("QDRANT_PORT"))
-    )
+
+    url     = os.getenv("QDRANT_HOST")
+    api_key = os.getenv("QDRANT_API_KEY")
+
+    print(f"   Connecting to Qdrant: {url}")
+    
+    if url and api_key:
+        client = QdrantClient(url=url, api_key=api_key)
+    else:
+        # Fallback local
+        client = QdrantClient(
+            host=os.getenv("QDRANT_HOST", "localhost"),
+            port=int(os.getenv("QDRANT_PORT", 6333))
+        )
+        
     client.get_collections()
     print("✅ Qdrant: Connected")
 except Exception as e:
