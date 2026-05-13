@@ -1,0 +1,82 @@
+[
+  {
+    "timestamp": "2026-05-09T20:37:48.325012",
+    "query": "Add email field to Owner",
+    "wiki_tokens": 4106,
+    "raw_tokens": 0,
+    "saved_tokens": 0,
+    "source_files": 5
+  },
+  {
+    "timestamp": "2026-05-09T20:45:21.092670",
+    "query": "How does the application manage pet owners?",
+    "wiki_tokens": 2840,
+    "raw_tokens": 2728,
+    "saved_tokens": 0,
+    "source_files": 2
+  },
+  {
+    "timestamp": "2026-05-09T20:45:21.097104",
+    "query": "Which classes handle REST API requests?",
+    "wiki_tokens": 1920,
+    "raw_tokens": 3681,
+    "saved_tokens": 1761,
+    "source_files": 3
+  },
+  {
+    "timestamp": "2026-05-09T20:45:21.118984",
+    "query": "Add email validation to Owner",
+    "wiki_tokens": 4200,
+    "raw_tokens": 2728,
+    "saved_tokens": 0,
+    "source_files": 2
+  },
+  {
+    "timestamp": "2026-05-09T20:45:21.144853",
+    "query": "How is pet visit history tracked?",
+    "wiki_tokens": 2100,
+    "raw_tokens": 969,
+    "saved_tokens": 0,
+    "source_files": 2
+  },
+  {
+    "timestamp": "2026-05-09T20:45:21.167149",
+    "query": "Add endpoint to list all vets by specialty",
+    "wiki_tokens": 5100,
+    "raw_tokens": 1715,
+    "saved_tokens": 0,
+    "source_files": 3
+  },
+  {
+    "timestamp": "2026-05-09T20:45:21.197119",
+    "query": "Where is data persistence configured?",
+    "wiki_tokens": 1650,
+    "raw_tokens": 1072,
+    "saved_tokens": 0,
+    "source_files": 2
+  },
+  {
+    "timestamp": "2026-05-09T20:45:21.219398",
+    "query": "Add pet count validation per owner",
+    "wiki_tokens": 4800,
+    "raw_tokens": 3177,
+    "saved_tokens": 0,
+    "source_files": 3
+  },
+  {
+    "timestamp": "2026-05-09T20:45:21.243710",
+    "query": "What is the relationship between Pet and Owner?",
+    "wiki_tokens": 1780,
+    "raw_tokens": 1720,
+    "saved_tokens": 0,
+    "source_files": 2
+  },
+  {
+    "timestamp": "2026-05-09T20:48:21.299607",
+    "query": "Add email to owner entity",
+    "wiki_tokens": 3864,
+    "raw_tokens": 0,
+    "saved_tokens": 0,
+    "source_files": 5
+  }
+]

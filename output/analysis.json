@@ -1,0 +1,1433 @@
+[
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\PetClinicApplication.java",
+    "package": "package org.springframework.samples.petclinic;",
+    "imports": [
+      "import org.springframework.boot.SpringApplication;",
+      "import org.springframework.boot.autoconfigure.SpringBootApplication;",
+      "import org.springframework.context.annotation.ImportRuntimeHints;"
+    ],
+    "classes": [
+      {
+        "name": "PetClinicApplication",
+        "component_type": "CLASS",
+        "annotations": [
+          "@SpringBootApplication",
+          "@ImportRuntimeHints(PetClinicRuntimeHints.class)"
+        ],
+        "methods": [
+          {
+            "name": "main",
+            "return_type": "void",
+            "parameters": [
+              "String[] args"
+            ],
+            "annotations": []
+          }
+        ],
+        "fields": []
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\PetClinicRuntimeHints.java",
+    "package": "package org.springframework.samples.petclinic;",
+    "imports": [
+      "import org.springframework.aot.hint.RuntimeHints;",
+      "import org.springframework.aot.hint.RuntimeHintsRegistrar;",
+      "import org.springframework.samples.petclinic.model.BaseEntity;",
+      "import org.springframework.samples.petclinic.model.Person;",
+      "import org.springframework.samples.petclinic.vet.Vet;"
+    ],
+    "classes": [
+      {
+        "name": "PetClinicRuntimeHints",
+        "component_type": "CLASS",
+        "annotations": [],
+        "methods": [
+          {
+            "name": "registerHints",
+            "return_type": "void",
+            "parameters": [
+              "RuntimeHints hints",
+              "ClassLoader classLoader"
+            ],
+            "annotations": [
+              "@Override"
+            ]
+          }
+        ],
+        "fields": []
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\model\\BaseEntity.java",
+    "package": "package org.springframework.samples.petclinic.model;",
+    "imports": [
+      "import java.io.Serializable;",
+      "import jakarta.persistence.GeneratedValue;",
+      "import jakarta.persistence.GenerationType;",
+      "import jakarta.persistence.Id;",
+      "import jakarta.persistence.MappedSuperclass;"
+    ],
+    "classes": [
+      {
+        "name": "BaseEntity",
+        "component_type": "CLASS",
+        "annotations": [
+          "@MappedSuperclass"
+        ],
+        "methods": [
+          {
+            "name": "getId",
+            "return_type": "Integer",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setId",
+            "return_type": "void",
+            "parameters": [
+              "Integer id"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "isNew",
+            "return_type": "boolean",
+            "parameters": [],
+            "annotations": []
+          }
+        ],
+        "fields": [
+          {
+            "name": "id",
+            "type": "Integer",
+            "annotations": [
+              "@Id",
+              "@GeneratedValue(strategy = GenerationType.IDENTITY)"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\model\\NamedEntity.java",
+    "package": "package org.springframework.samples.petclinic.model;",
+    "imports": [
+      "import jakarta.persistence.Column;",
+      "import jakarta.persistence.MappedSuperclass;",
+      "import jakarta.validation.constraints.NotBlank;"
+    ],
+    "classes": [
+      {
+        "name": "NamedEntity",
+        "component_type": "CLASS",
+        "annotations": [
+          "@MappedSuperclass"
+        ],
+        "methods": [
+          {
+            "name": "getName",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setName",
+            "return_type": "void",
+            "parameters": [
+              "String name"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "toString",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": [
+              "@Override"
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "name": "name",
+            "type": "String",
+            "annotations": [
+              "@Column",
+              "@NotBlank"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\model\\Person.java",
+    "package": "package org.springframework.samples.petclinic.model;",
+    "imports": [
+      "import jakarta.persistence.Column;",
+      "import jakarta.persistence.MappedSuperclass;",
+      "import jakarta.validation.constraints.NotBlank;"
+    ],
+    "classes": [
+      {
+        "name": "Person",
+        "component_type": "CLASS",
+        "annotations": [
+          "@MappedSuperclass"
+        ],
+        "methods": [
+          {
+            "name": "getFirstName",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setFirstName",
+            "return_type": "void",
+            "parameters": [
+              "String firstName"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getLastName",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setLastName",
+            "return_type": "void",
+            "parameters": [
+              "String lastName"
+            ],
+            "annotations": []
+          }
+        ],
+        "fields": [
+          {
+            "name": "firstName",
+            "type": "String",
+            "annotations": [
+              "@Column",
+              "@NotBlank"
+            ]
+          },
+          {
+            "name": "lastName",
+            "type": "String",
+            "annotations": [
+              "@Column",
+              "@NotBlank"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\owner\\Owner.java",
+    "package": "package org.springframework.samples.petclinic.owner;",
+    "imports": [
+      "import java.util.ArrayList;",
+      "import java.util.List;",
+      "import java.util.Objects;",
+      "import org.springframework.core.style.ToStringCreator;",
+      "import org.springframework.samples.petclinic.model.Person;",
+      "import org.springframework.util.Assert;",
+      "import jakarta.persistence.CascadeType;",
+      "import jakarta.persistence.Column;",
+      "import jakarta.persistence.Entity;",
+      "import jakarta.persistence.FetchType;",
+      "import jakarta.persistence.JoinColumn;",
+      "import jakarta.persistence.OneToMany;",
+      "import jakarta.persistence.OrderBy;",
+      "import jakarta.persistence.Table;",
+      "import jakarta.validation.constraints.Pattern;",
+      "import jakarta.validation.constraints.NotBlank;"
+    ],
+    "classes": [
+      {
+        "name": "Owner",
+        "component_type": "ENTITY",
+        "annotations": [
+          "@Entity",
+          "@Table(name = \"owners\")"
+        ],
+        "methods": [
+          {
+            "name": "getAddress",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setAddress",
+            "return_type": "void",
+            "parameters": [
+              "String address"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getCity",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setCity",
+            "return_type": "void",
+            "parameters": [
+              "String city"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getTelephone",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setTelephone",
+            "return_type": "void",
+            "parameters": [
+              "String telephone"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getPets",
+            "return_type": "List<Pet>",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "addPet",
+            "return_type": "void",
+            "parameters": [
+              "Pet pet"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getPet",
+            "return_type": "Pet",
+            "parameters": [
+              "String name"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getPet",
+            "return_type": "Pet",
+            "parameters": [
+              "Integer id"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getPet",
+            "return_type": "Pet",
+            "parameters": [
+              "String name",
+              "boolean ignoreNew"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "toString",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": [
+              "@Override"
+            ]
+          },
+          {
+            "name": "addVisit",
+            "return_type": "void",
+            "parameters": [
+              "Integer petId",
+              "Visit visit"
+            ],
+            "annotations": []
+          }
+        ],
+        "fields": [
+          {
+            "name": "address",
+            "type": "String",
+            "annotations": [
+              "@Column",
+              "@NotBlank"
+            ]
+          },
+          {
+            "name": "city",
+            "type": "String",
+            "annotations": [
+              "@Column",
+              "@NotBlank"
+            ]
+          },
+          {
+            "name": "telephone",
+            "type": "String",
+            "annotations": [
+              "@Column",
+              "@NotBlank",
+              "@Pattern(regexp = \"\\\\d{10}\", message = \"{telephone.invalid}\")"
+            ]
+          },
+          {
+            "name": "pets",
+            "type": "List<Pet>",
+            "annotations": [
+              "@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)",
+              "@JoinColumn(name = \"owner_id\")",
+              "@OrderBy(\"name\")"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\owner\\OwnerController.java",
+    "package": "package org.springframework.samples.petclinic.owner;",
+    "imports": [
+      "import java.util.List;",
+      "import java.util.Objects;",
+      "import java.util.Optional;",
+      "import org.springframework.data.domain.Page;",
+      "import org.springframework.data.domain.PageRequest;",
+      "import org.springframework.data.domain.Pageable;",
+      "import org.springframework.stereotype.Controller;",
+      "import org.springframework.ui.Model;",
+      "import org.springframework.validation.BindingResult;",
+      "import org.springframework.web.bind.WebDataBinder;",
+      "import org.springframework.web.bind.annotation.GetMapping;",
+      "import org.springframework.web.bind.annotation.InitBinder;",
+      "import org.springframework.web.bind.annotation.ModelAttribute;",
+      "import org.springframework.web.bind.annotation.PathVariable;",
+      "import org.springframework.web.bind.annotation.PostMapping;",
+      "import org.springframework.web.bind.annotation.RequestParam;",
+      "import org.springframework.web.servlet.ModelAndView;",
+      "import jakarta.validation.Valid;",
+      "import org.springframework.web.servlet.mvc.support.RedirectAttributes;"
+    ],
+    "classes": [
+      {
+        "name": "OwnerController",
+        "component_type": "CONTROLLER",
+        "annotations": [
+          "@Controller"
+        ],
+        "methods": [
+          {
+            "name": "setAllowedFields",
+            "return_type": "void",
+            "parameters": [
+              "WebDataBinder dataBinder"
+            ],
+            "annotations": [
+              "@InitBinder"
+            ]
+          },
+          {
+            "name": "findOwner",
+            "return_type": "Owner",
+            "parameters": [
+              "@PathVariable(name = \"ownerId\", required = false) Integer ownerId"
+            ],
+            "annotations": [
+              "@ModelAttribute(\"owner\")"
+            ]
+          },
+          {
+            "name": "initCreationForm",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": [
+              "@GetMapping(\"/owners/new\")"
+            ]
+          },
+          {
+            "name": "processCreationForm",
+            "return_type": "String",
+            "parameters": [
+              "@Valid Owner owner",
+              "BindingResult result",
+              "RedirectAttributes redirectAttributes"
+            ],
+            "annotations": [
+              "@PostMapping(\"/owners/new\")"
+            ]
+          },
+          {
+            "name": "initFindForm",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": [
+              "@GetMapping(\"/owners/find\")"
+            ]
+          },
+          {
+            "name": "processFindForm",
+            "return_type": "String",
+            "parameters": [
+              "@RequestParam(defaultValue = \"1\") int page",
+              "Owner owner",
+              "BindingResult result",
+              "Model model"
+            ],
+            "annotations": [
+              "@GetMapping(\"/owners\")"
+            ]
+          },
+          {
+            "name": "addPaginationModel",
+            "return_type": "String",
+            "parameters": [
+              "int page",
+              "Model model",
+              "Page<Owner> paginated"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "findPaginatedForOwnersLastName",
+            "return_type": "Page<Owner>",
+            "parameters": [
+              "int page",
+              "String lastname"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "initUpdateOwnerForm",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": [
+              "@GetMapping(\"/owners/{ownerId}/edit\")"
+            ]
+          },
+          {
+            "name": "processUpdateOwnerForm",
+            "return_type": "String",
+            "parameters": [
+              "@Valid Owner owner",
+              "BindingResult result",
+              "@PathVariable(\"ownerId\") int ownerId",
+              "RedirectAttributes redirectAttributes"
+            ],
+            "annotations": [
+              "@PostMapping(\"/owners/{ownerId}/edit\")"
+            ]
+          },
+          {
+            "name": "showOwner",
+            "return_type": "ModelAndView",
+            "parameters": [
+              "@PathVariable(\"ownerId\") int ownerId"
+            ],
+            "annotations": [
+              "@GetMapping(\"/owners/{ownerId}\")"
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "name": "VIEWS_OWNER_CREATE_OR_UPDATE_FORM",
+            "type": "String",
+            "annotations": []
+          },
+          {
+            "name": "owners",
+            "type": "OwnerRepository",
+            "annotations": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\owner\\Pet.java",
+    "package": "package org.springframework.samples.petclinic.owner;",
+    "imports": [
+      "import java.time.LocalDate;",
+      "import java.util.Collection;",
+      "import java.util.LinkedHashSet;",
+      "import java.util.Set;",
+      "import org.springframework.format.annotation.DateTimeFormat;",
+      "import org.springframework.samples.petclinic.model.NamedEntity;",
+      "import jakarta.persistence.CascadeType;",
+      "import jakarta.persistence.Column;",
+      "import jakarta.persistence.Entity;",
+      "import jakarta.persistence.FetchType;",
+      "import jakarta.persistence.JoinColumn;",
+      "import jakarta.persistence.ManyToOne;",
+      "import jakarta.persistence.OneToMany;",
+      "import jakarta.persistence.OrderBy;",
+      "import jakarta.persistence.Table;"
+    ],
+    "classes": [
+      {
+        "name": "Pet",
+        "component_type": "ENTITY",
+        "annotations": [
+          "@Entity",
+          "@Table(name = \"pets\")"
+        ],
+        "methods": [
+          {
+            "name": "setBirthDate",
+            "return_type": "void",
+            "parameters": [
+              "LocalDate birthDate"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getBirthDate",
+            "return_type": "LocalDate",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "getType",
+            "return_type": "PetType",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setType",
+            "return_type": "void",
+            "parameters": [
+              "PetType type"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getVisits",
+            "return_type": "Collection<Visit>",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "addVisit",
+            "return_type": "void",
+            "parameters": [
+              "Visit visit"
+            ],
+            "annotations": []
+          }
+        ],
+        "fields": [
+          {
+            "name": "birthDate",
+            "type": "LocalDate",
+            "annotations": [
+              "@Column",
+              "@DateTimeFormat(pattern = \"yyyy-MM-dd\")"
+            ]
+          },
+          {
+            "name": "type",
+            "type": "PetType",
+            "annotations": [
+              "@ManyToOne",
+              "@JoinColumn(name = \"type_id\")"
+            ]
+          },
+          {
+            "name": "visits",
+            "type": "Set<Visit>",
+            "annotations": [
+              "@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)",
+              "@JoinColumn(name = \"pet_id\")",
+              "@OrderBy(\"date ASC\")"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\owner\\PetController.java",
+    "package": "package org.springframework.samples.petclinic.owner;",
+    "imports": [
+      "import java.time.LocalDate;",
+      "import java.util.Collection;",
+      "import java.util.Objects;",
+      "import java.util.Optional;",
+      "import org.springframework.stereotype.Controller;",
+      "import org.springframework.ui.ModelMap;",
+      "import org.springframework.util.Assert;",
+      "import org.springframework.util.StringUtils;",
+      "import org.springframework.validation.BindingResult;",
+      "import org.springframework.web.bind.WebDataBinder;",
+      "import org.springframework.web.bind.annotation.GetMapping;",
+      "import org.springframework.web.bind.annotation.InitBinder;",
+      "import org.springframework.web.bind.annotation.ModelAttribute;",
+      "import org.springframework.web.bind.annotation.PathVariable;",
+      "import org.springframework.web.bind.annotation.PostMapping;",
+      "import org.springframework.web.bind.annotation.RequestMapping;",
+      "import jakarta.validation.Valid;",
+      "import org.springframework.web.servlet.mvc.support.RedirectAttributes;"
+    ],
+    "classes": [
+      {
+        "name": "PetController",
+        "component_type": "CONTROLLER",
+        "annotations": [
+          "@Controller",
+          "@RequestMapping(\"/owners/{ownerId}\")"
+        ],
+        "methods": [
+          {
+            "name": "populatePetTypes",
+            "return_type": "Collection<PetType>",
+            "parameters": [],
+            "annotations": [
+              "@ModelAttribute(\"types\")"
+            ]
+          },
+          {
+            "name": "findOwner",
+            "return_type": "Owner",
+            "parameters": [
+              "@PathVariable(\"ownerId\") int ownerId"
+            ],
+            "annotations": [
+              "@ModelAttribute(\"owner\")"
+            ]
+          },
+          {
+            "name": "findPet",
+            "return_type": "Pet",
+            "parameters": [
+              "@PathVariable(\"ownerId\") int ownerId",
+              "@PathVariable(name = \"petId\", required = false) Integer petId"
+            ],
+            "annotations": [
+              "@ModelAttribute(\"pet\")"
+            ]
+          },
+          {
+            "name": "initOwnerBinder",
+            "return_type": "void",
+            "parameters": [
+              "WebDataBinder dataBinder"
+            ],
+            "annotations": [
+              "@InitBinder(\"owner\")"
+            ]
+          },
+          {
+            "name": "initPetBinder",
+            "return_type": "void",
+            "parameters": [
+              "WebDataBinder dataBinder"
+            ],
+            "annotations": [
+              "@InitBinder(\"pet\")"
+            ]
+          },
+          {
+            "name": "initCreationForm",
+            "return_type": "String",
+            "parameters": [
+              "Owner owner",
+              "ModelMap model"
+            ],
+            "annotations": [
+              "@GetMapping(\"/pets/new\")"
+            ]
+          },
+          {
+            "name": "processCreationForm",
+            "return_type": "String",
+            "parameters": [
+              "Owner owner",
+              "@Valid Pet pet",
+              "BindingResult result",
+              "RedirectAttributes redirectAttributes"
+            ],
+            "annotations": [
+              "@PostMapping(\"/pets/new\")"
+            ]
+          },
+          {
+            "name": "initUpdateForm",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": [
+              "@GetMapping(\"/pets/{petId}/edit\")"
+            ]
+          },
+          {
+            "name": "processUpdateForm",
+            "return_type": "String",
+            "parameters": [
+              "Owner owner",
+              "@Valid Pet pet",
+              "BindingResult result",
+              "RedirectAttributes redirectAttributes"
+            ],
+            "annotations": [
+              "@PostMapping(\"/pets/{petId}/edit\")"
+            ]
+          },
+          {
+            "name": "updatePetDetails",
+            "return_type": "void",
+            "parameters": [
+              "Owner owner",
+              "Pet pet"
+            ],
+            "annotations": []
+          }
+        ],
+        "fields": [
+          {
+            "name": "VIEWS_PETS_CREATE_OR_UPDATE_FORM",
+            "type": "String",
+            "annotations": []
+          },
+          {
+            "name": "owners",
+            "type": "OwnerRepository",
+            "annotations": []
+          },
+          {
+            "name": "types",
+            "type": "PetTypeRepository",
+            "annotations": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\owner\\PetType.java",
+    "package": "package org.springframework.samples.petclinic.owner;",
+    "imports": [
+      "import org.springframework.samples.petclinic.model.NamedEntity;",
+      "import jakarta.persistence.Entity;",
+      "import jakarta.persistence.Table;"
+    ],
+    "classes": [
+      {
+        "name": "PetType",
+        "component_type": "ENTITY",
+        "annotations": [
+          "@Entity",
+          "@Table(name = \"types\")"
+        ],
+        "methods": [],
+        "fields": []
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\owner\\PetTypeFormatter.java",
+    "package": "package org.springframework.samples.petclinic.owner;",
+    "imports": [
+      "import org.springframework.format.Formatter;",
+      "import org.springframework.stereotype.Component;",
+      "import java.text.ParseException;",
+      "import java.util.Collection;",
+      "import java.util.Locale;",
+      "import java.util.Objects;"
+    ],
+    "classes": [
+      {
+        "name": "PetTypeFormatter",
+        "component_type": "COMPONENT",
+        "annotations": [
+          "@Component"
+        ],
+        "methods": [
+          {
+            "name": "print",
+            "return_type": "String",
+            "parameters": [
+              "PetType petType",
+              "Locale locale"
+            ],
+            "annotations": [
+              "@Override"
+            ]
+          },
+          {
+            "name": "parse",
+            "return_type": "PetType",
+            "parameters": [
+              "String text",
+              "Locale locale"
+            ],
+            "annotations": [
+              "@Override"
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "name": "types",
+            "type": "PetTypeRepository",
+            "annotations": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\owner\\PetValidator.java",
+    "package": "package org.springframework.samples.petclinic.owner;",
+    "imports": [
+      "import org.springframework.util.StringUtils;",
+      "import org.springframework.validation.Errors;",
+      "import org.springframework.validation.Validator;"
+    ],
+    "classes": [
+      {
+        "name": "PetValidator",
+        "component_type": "CLASS",
+        "annotations": [],
+        "methods": [
+          {
+            "name": "validate",
+            "return_type": "void",
+            "parameters": [
+              "Object obj",
+              "Errors errors"
+            ],
+            "annotations": [
+              "@Override"
+            ]
+          },
+          {
+            "name": "supports",
+            "return_type": "boolean",
+            "parameters": [
+              "Class<?> clazz"
+            ],
+            "annotations": [
+              "@Override"
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "name": "REQUIRED",
+            "type": "String",
+            "annotations": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\owner\\Visit.java",
+    "package": "package org.springframework.samples.petclinic.owner;",
+    "imports": [
+      "import java.time.LocalDate;",
+      "import org.springframework.format.annotation.DateTimeFormat;",
+      "import org.springframework.samples.petclinic.model.BaseEntity;",
+      "import jakarta.persistence.Column;",
+      "import jakarta.persistence.Entity;",
+      "import jakarta.persistence.Table;",
+      "import jakarta.validation.constraints.NotBlank;"
+    ],
+    "classes": [
+      {
+        "name": "Visit",
+        "component_type": "ENTITY",
+        "annotations": [
+          "@Entity",
+          "@Table(name = \"visits\")"
+        ],
+        "methods": [
+          {
+            "name": "getDate",
+            "return_type": "LocalDate",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setDate",
+            "return_type": "void",
+            "parameters": [
+              "LocalDate date"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "getDescription",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "setDescription",
+            "return_type": "void",
+            "parameters": [
+              "String description"
+            ],
+            "annotations": []
+          }
+        ],
+        "fields": [
+          {
+            "name": "date",
+            "type": "LocalDate",
+            "annotations": [
+              "@Column(name = \"visit_date\")",
+              "@DateTimeFormat(pattern = \"yyyy-MM-dd\")"
+            ]
+          },
+          {
+            "name": "description",
+            "type": "String",
+            "annotations": [
+              "@NotBlank"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\owner\\VisitController.java",
+    "package": "package org.springframework.samples.petclinic.owner;",
+    "imports": [
+      "import java.util.Map;",
+      "import java.util.Optional;",
+      "import org.springframework.stereotype.Controller;",
+      "import org.springframework.validation.BindingResult;",
+      "import org.springframework.web.bind.WebDataBinder;",
+      "import org.springframework.web.bind.annotation.GetMapping;",
+      "import org.springframework.web.bind.annotation.InitBinder;",
+      "import org.springframework.web.bind.annotation.ModelAttribute;",
+      "import org.springframework.web.bind.annotation.PathVariable;",
+      "import org.springframework.web.bind.annotation.PostMapping;",
+      "import jakarta.validation.Valid;",
+      "import org.springframework.web.servlet.mvc.support.RedirectAttributes;"
+    ],
+    "classes": [
+      {
+        "name": "VisitController",
+        "component_type": "CONTROLLER",
+        "annotations": [
+          "@Controller"
+        ],
+        "methods": [
+          {
+            "name": "setAllowedFields",
+            "return_type": "void",
+            "parameters": [
+              "WebDataBinder dataBinder"
+            ],
+            "annotations": [
+              "@InitBinder"
+            ]
+          },
+          {
+            "name": "loadPetWithVisit",
+            "return_type": "Visit",
+            "parameters": [
+              "@PathVariable(\"ownerId\") int ownerId",
+              "@PathVariable(\"petId\") int petId",
+              "Map<String, Object> model"
+            ],
+            "annotations": [
+              "@ModelAttribute(\"visit\")"
+            ]
+          },
+          {
+            "name": "initNewVisitForm",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": [
+              "@GetMapping(\"/owners/{ownerId}/pets/{petId}/visits/new\")"
+            ]
+          },
+          {
+            "name": "processNewVisitForm",
+            "return_type": "String",
+            "parameters": [
+              "@ModelAttribute Owner owner",
+              "@PathVariable int petId",
+              "@Valid Visit visit",
+              "BindingResult result",
+              "RedirectAttributes redirectAttributes"
+            ],
+            "annotations": [
+              "@PostMapping(\"/owners/{ownerId}/pets/{petId}/visits/new\")"
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "name": "owners",
+            "type": "OwnerRepository",
+            "annotations": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\system\\CacheConfiguration.java",
+    "package": "package org.springframework.samples.petclinic.system;",
+    "imports": [
+      "import org.springframework.boot.cache.autoconfigure.JCacheManagerCustomizer;",
+      "import org.springframework.cache.annotation.EnableCaching;",
+      "import org.springframework.context.annotation.Bean;",
+      "import org.springframework.context.annotation.Configuration;",
+      "import javax.cache.configuration.MutableConfiguration;"
+    ],
+    "classes": [
+      {
+        "name": "CacheConfiguration",
+        "component_type": "CONFIGURATION",
+        "annotations": [
+          "@Configuration(proxyBeanMethods = false)",
+          "@EnableCaching"
+        ],
+        "methods": [
+          {
+            "name": "petclinicCacheConfigurationCustomizer",
+            "return_type": "JCacheManagerCustomizer",
+            "parameters": [],
+            "annotations": [
+              "@Bean"
+            ]
+          },
+          {
+            "name": "cacheConfiguration",
+            "return_type": "javax.cache.configuration.Configuration<Object, Object>",
+            "parameters": [],
+            "annotations": []
+          }
+        ],
+        "fields": []
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\system\\CrashController.java",
+    "package": "package org.springframework.samples.petclinic.system;",
+    "imports": [
+      "import org.springframework.stereotype.Controller;",
+      "import org.springframework.web.bind.annotation.GetMapping;"
+    ],
+    "classes": [
+      {
+        "name": "CrashController",
+        "component_type": "CONTROLLER",
+        "annotations": [
+          "@Controller"
+        ],
+        "methods": [
+          {
+            "name": "triggerException",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": [
+              "@GetMapping(\"/oups\")"
+            ]
+          }
+        ],
+        "fields": []
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\system\\WebConfiguration.java",
+    "package": "package org.springframework.samples.petclinic.system;",
+    "imports": [
+      "import org.springframework.context.annotation.Bean;",
+      "import org.springframework.context.annotation.Configuration;",
+      "import org.springframework.web.servlet.LocaleResolver;",
+      "import org.springframework.web.servlet.config.annotation.InterceptorRegistry;",
+      "import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;",
+      "import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;",
+      "import org.springframework.web.servlet.i18n.SessionLocaleResolver;",
+      "import java.util.Locale;"
+    ],
+    "classes": [
+      {
+        "name": "WebConfiguration",
+        "component_type": "CONFIGURATION",
+        "annotations": [
+          "@Configuration",
+          "@SuppressWarnings(\"unused\")"
+        ],
+        "methods": [
+          {
+            "name": "localeResolver",
+            "return_type": "LocaleResolver",
+            "parameters": [],
+            "annotations": [
+              "@Bean"
+            ]
+          },
+          {
+            "name": "localeChangeInterceptor",
+            "return_type": "LocaleChangeInterceptor",
+            "parameters": [],
+            "annotations": [
+              "@Bean"
+            ]
+          },
+          {
+            "name": "addInterceptors",
+            "return_type": "void",
+            "parameters": [
+              "InterceptorRegistry registry"
+            ],
+            "annotations": [
+              "@Override"
+            ]
+          }
+        ],
+        "fields": []
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\system\\WelcomeController.java",
+    "package": "package org.springframework.samples.petclinic.system;",
+    "imports": [
+      "import org.springframework.stereotype.Controller;",
+      "import org.springframework.web.bind.annotation.GetMapping;"
+    ],
+    "classes": [
+      {
+        "name": "WelcomeController",
+        "component_type": "CONTROLLER",
+        "annotations": [
+          "@Controller"
+        ],
+        "methods": [
+          {
+            "name": "welcome",
+            "return_type": "String",
+            "parameters": [],
+            "annotations": [
+              "@GetMapping(\"/\")"
+            ]
+          }
+        ],
+        "fields": []
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\vet\\Specialty.java",
+    "package": "package org.springframework.samples.petclinic.vet;",
+    "imports": [
+      "import org.springframework.samples.petclinic.model.NamedEntity;",
+      "import jakarta.persistence.Entity;",
+      "import jakarta.persistence.Table;"
+    ],
+    "classes": [
+      {
+        "name": "Specialty",
+        "component_type": "ENTITY",
+        "annotations": [
+          "@Entity",
+          "@Table(name = \"specialties\")"
+        ],
+        "methods": [],
+        "fields": []
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\vet\\Vet.java",
+    "package": "package org.springframework.samples.petclinic.vet;",
+    "imports": [
+      "import java.util.Comparator;",
+      "import java.util.HashSet;",
+      "import java.util.List;",
+      "import java.util.Set;",
+      "import java.util.stream.Collectors;",
+      "import org.springframework.samples.petclinic.model.NamedEntity;",
+      "import org.springframework.samples.petclinic.model.Person;",
+      "import jakarta.persistence.Entity;",
+      "import jakarta.persistence.FetchType;",
+      "import jakarta.persistence.JoinColumn;",
+      "import jakarta.persistence.JoinTable;",
+      "import jakarta.persistence.ManyToMany;",
+      "import jakarta.persistence.Table;",
+      "import jakarta.xml.bind.annotation.XmlElement;"
+    ],
+    "classes": [
+      {
+        "name": "Vet",
+        "component_type": "ENTITY",
+        "annotations": [
+          "@Entity",
+          "@Table(name = \"vets\")"
+        ],
+        "methods": [
+          {
+            "name": "getSpecialtiesInternal",
+            "return_type": "Set<Specialty>",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "getSpecialties",
+            "return_type": "List<Specialty>",
+            "parameters": [],
+            "annotations": [
+              "@XmlElement"
+            ]
+          },
+          {
+            "name": "getNrOfSpecialties",
+            "return_type": "int",
+            "parameters": [],
+            "annotations": []
+          },
+          {
+            "name": "addSpecialty",
+            "return_type": "void",
+            "parameters": [
+              "Specialty specialty"
+            ],
+            "annotations": []
+          }
+        ],
+        "fields": [
+          {
+            "name": "specialties",
+            "type": "Set<Specialty>",
+            "annotations": [
+              "@ManyToMany(fetch = FetchType.EAGER)",
+              "@JoinTable(name = \"vet_specialties\", joinColumns = @JoinColumn(name = \"vet_id\"),\n\t\t\tinverseJoinColumns = @JoinColumn(name = \"specialty_id\"))"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\vet\\VetController.java",
+    "package": "package org.springframework.samples.petclinic.vet;",
+    "imports": [
+      "import java.util.List;",
+      "import org.springframework.data.domain.Page;",
+      "import org.springframework.data.domain.PageRequest;",
+      "import org.springframework.data.domain.Pageable;",
+      "import org.springframework.stereotype.Controller;",
+      "import org.springframework.ui.Model;",
+      "import org.springframework.web.bind.annotation.GetMapping;",
+      "import org.springframework.web.bind.annotation.RequestParam;",
+      "import org.springframework.web.bind.annotation.ResponseBody;"
+    ],
+    "classes": [
+      {
+        "name": "VetController",
+        "component_type": "CONTROLLER",
+        "annotations": [
+          "@Controller"
+        ],
+        "methods": [
+          {
+            "name": "showVetList",
+            "return_type": "String",
+            "parameters": [
+              "@RequestParam(defaultValue = \"1\") int page",
+              "Model model"
+            ],
+            "annotations": [
+              "@GetMapping(\"/vets.html\")"
+            ]
+          },
+          {
+            "name": "addPaginationModel",
+            "return_type": "String",
+            "parameters": [
+              "int page",
+              "Page<Vet> paginated",
+              "Model model"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "findPaginated",
+            "return_type": "Page<Vet>",
+            "parameters": [
+              "int page"
+            ],
+            "annotations": []
+          },
+          {
+            "name": "showResourcesVetList",
+            "return_type": "Vets",
+            "parameters": [],
+            "annotations": [
+              "@GetMapping({ \"/vets\" })",
+              "@ResponseBody"
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "name": "vetRepository",
+            "type": "VetRepository",
+            "annotations": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "repos\\spring-petclinic\\src\\main\\java\\org\\springframework\\samples\\petclinic\\vet\\Vets.java",
+    "package": "package org.springframework.samples.petclinic.vet;",
+    "imports": [
+      "import java.util.ArrayList;",
+      "import java.util.List;",
+      "import jakarta.xml.bind.annotation.XmlElement;",
+      "import jakarta.xml.bind.annotation.XmlRootElement;"
+    ],
+    "classes": [
+      {
+        "name": "Vets",
+        "component_type": "CLASS",
+        "annotations": [
+          "@XmlRootElement"
+        ],
+        "methods": [
+          {
+            "name": "getVetList",
+            "return_type": "List<Vet>",
+            "parameters": [],
+            "annotations": [
+              "@XmlElement"
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "name": "vets",
+            "type": "List<Vet>",
+            "annotations": []
+          }
+        ]
+      }
+    ]
+  }
+]
