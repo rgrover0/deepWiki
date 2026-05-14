@@ -4,7 +4,7 @@ from pipeline.graph.schema import get_driver
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("")
 def list_classes():
     driver = get_driver()
     with driver.session() as session:

@@ -39,7 +39,7 @@ def _save_log(entry: dict):
         json.dump(log, f, indent=2)
 
 
-@router.post("/")
+@router.post("")
 def run_comparison(req: CompareRequest):
     if req.mode == "groq":
         result = groq_compare(req.query, req.top_k)

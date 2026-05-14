@@ -30,7 +30,7 @@ class AskRequest(BaseModel):
     top_k: int = 4
 
 
-@router.post("/")
+@router.post("")
 def ask(req: AskRequest):
     # 1. Semantic search for relevant classes
     query_vector = embed_text(req.question)

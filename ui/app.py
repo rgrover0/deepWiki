@@ -284,7 +284,7 @@ elif page == "🔎 Semantic Search":
             "top_k": top_k,
             "component_type": None if filter_type == "All" else filter_type
         }
-        resp = safe_post("/search/", payload, default={"results": []})
+        resp = safe_post("/search", payload, default={"results": []})
 
         st.divider()
         st.subheader(f"Results for: *{query}*")
@@ -332,7 +332,7 @@ elif page == "💬 Ask DeepWiki":
 
     if st.button("🔍 Ask", type="primary") and question:
         with st.spinner("Searching wiki and generating answer..."):
-            resp = safe_post("/ask/", {"question": question, "top_k": 4}, default={"answer": "", "sources": [], "scores": []})
+            resp = safe_post("/ask", {"question": question, "top_k": 4}, default={"answer": "", "sources": [], "scores": []})
 
         st.subheader("💡 Answer")
         st.success(resp["answer"])
@@ -375,7 +375,7 @@ elif page == "📋 Plan & Tests":
 
     if st.button("🚀 Generate Plan", type="primary") and requirement:
         with st.spinner("🔍 Searching wiki... 🤖 Generating plan..."):
-            resp = safe_post("/plan/", {"requirement": requirement, "top_k": top_k, "generate_tests": gen_tests}, default={"relevant_classes": [], "plan": "", "token_usage": {}})
+            resp = safe_post("/plan", {"requirement": requirement, "top_k": top_k, "generate_tests": gen_tests}, default={"relevant_classes": [], "plan": "", "token_usage": {}})
 
         if "error" in resp:
             st.error(resp["error"])
@@ -625,7 +625,7 @@ elif page == "⚖️ Live Comparison":
     if st.button("▶️ Run Comparison", type="primary") and query:
 
         with st.spinner("Running comparison across all keys..."):
-            resp = safe_post("/compare/", {"query": query, "top_k": top_k, "model": selected_model, "mode": mode}, default={"raw": {}, "wiki": {}, "cache": {}, "summary": {}, "groq": {}, "saved_pct": 0})
+            resp = safe_post("/compare", {"query": query, "top_k": top_k, "model": selected_model, "mode": mode}, default={"raw": {}, "wiki": {}, "cache": {}, "summary": {}, "groq": {}, "saved_pct": 0})
 
         st.divider()
 
