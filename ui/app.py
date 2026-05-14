@@ -1,7 +1,31 @@
 import streamlit as st
 import requests
 
-API = "http://localhost:8000"
+# ── PASSWORD GATE ──────────────────────────────────────────
+def check_password():
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if not st.session_state.authenticated:
+        st.title("📚 DeepWiki")
+        st.caption("Codebase Intelligence Platform")
+        st.divider()
+
+        pwd = st.text_input("Enter demo password:", type="password")
+        if st.button("Enter", type="primary"):
+            if pwd == st.secrets.get("DEMO_PASSWORD", "deepwiki2026"):
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Incorrect password")
+        return False
+    return True
+
+if not check_password():
+    st.stop()
+
+# ── API URL FROM SECRETS ────────────────────────────────────
+API = st.secrets.get("API_URL", "http://localhost:8000")
 
 
 def safe_get(endpoint: str, default=None):
