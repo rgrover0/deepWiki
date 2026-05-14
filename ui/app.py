@@ -25,10 +25,13 @@ if not check_password():
     st.stop()
 
 # ── API URL FROM SECRETS ────────────────────────────────────
-API = st.secrets.get("API_URL", "http://localhost:8000")
+API = st.secrets.get("API_URL", "http://localhost:8000").rstrip("/")
 
 
 def safe_get(endpoint: str, default=None):
+    # Ensure single slash between base and path
+    url = f"{API}/{endpoint.lstrip('/')}"
+
     """GET request with error handling."""
     try:
         resp = requests.get(f"{API}{endpoint}", timeout=30)
@@ -45,6 +48,8 @@ def safe_get(endpoint: str, default=None):
 
 
 def safe_post(endpoint: str, payload: dict, default=None):
+    # Ensure single slash between base and path
+    url = f"{API}/{endpoint.lstrip('/')}"
     """POST request with error handling."""
     try:
         resp = requests.post(
