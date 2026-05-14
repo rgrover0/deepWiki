@@ -25,12 +25,16 @@ if not check_password():
     st.stop()
 
 # ── API URL FROM SECRETS ────────────────────────────────────
-API = st.secrets.get("API_URL", "http://localhost:8000").rstrip("/")
+_API_BASE = st.secrets.get("API_URL", "http://localhost:8000").rstrip("/")
+
+def api(path: str) -> str:
+    """Always produces clean URL regardless of slashes."""
+    return f"{_API_BASE}/{path.lstrip('/')}"
 
 
-def safe_get(endpoint: str, default=None):
+def safe_get(path: str, default=None):
     # Ensure single slash between base and path
-    url = f"{API}/{endpoint.lstrip('/')}"
+    url = api(path)
 
     """GET request with error handling."""
     try:
@@ -47,9 +51,9 @@ def safe_get(endpoint: str, default=None):
         return default
 
 
-def safe_post(endpoint: str, payload: dict, default=None):
+def safe_post(path: str, payload: dict, default=None):
     # Ensure single slash between base and path
-    url = f"{API}/{endpoint.lstrip('/')}"
+    url = api(path)
     """POST request with error handling."""
     try:
         resp = requests.post(
@@ -71,6 +75,23 @@ def safe_post(endpoint: str, payload: dict, default=None):
         st.error(f"❌ Request failed: {e}")
         return default
 
+def safe_delete(path: str):
+    try:
+        requests.delete(api(path), timeout=10)
+    except Exception:
+        pass
+    except requests.exceptions.ConnectionError:
+        st.error("❌ API not running. Start with: `uvicorn api.main:app --reload --port 8000`")
+        return False
+    except requests.exceptions.Timeout:
+        st.error("❌ Request timed out. LLM may be slow — try again.")
+        return False
+    except Exception as e:
+        st.error(f"❌ Request failed: {e}")
+        return False
+    return True
+
+# ── PAGE CONFIG ────────────────────────────────────────────
 st.set_page_config(
     page_title="DeepWiki",
     page_icon="📚",
@@ -98,12 +119,15 @@ page = st.sidebar.radio(
 st.sidebar.divider()
 try:
     health = safe_get("/health")
-    st.sidebar.success("✅ API connected")
+    if health:
+        st.sidebar.success("✅ API connected")
+    else:
+        st.sidebar.error("❌ API offline")
+        st.sidebar.code("uvicorn api.main:app --reload --port 8000")
 except Exception:
     st.sidebar.error("❌ API offline")
     st.sidebar.code("uvicorn api.main:app --reload --port 8000")
 st.sidebar.caption("Spring PetClinic · Local POC")
-
 
 # ── OVERVIEW ──────────────────────────────────────────────
 if page == "🏠 Overview":
@@ -772,5 +796,6 @@ while answer quality remains identical.
             )
 
         if st.button("🗑️ Clear History"):
-            requests.delete(f"{API}/compare/history")
+            safe_delete("/compare/history")
+            st.success("History cleared")
             st.rerun()
