@@ -34,7 +34,7 @@ def safe_get(endpoint: str, default=None):
 
     """GET request with error handling."""
     try:
-        resp = requests.get(f"{API}{endpoint}", timeout=30)
+        resp = requests.get(url, timeout=30)
         if resp.status_code == 200 and resp.text.strip():
             return resp.json()
         st.error(f"API error {resp.status_code}: {resp.text[:200]}")
@@ -53,7 +53,7 @@ def safe_post(endpoint: str, payload: dict, default=None):
     """POST request with error handling."""
     try:
         resp = requests.post(
-            f"{API}{endpoint}",
+            url,
             json=payload,
             timeout=120      # LLM calls can be slow
         )
@@ -97,7 +97,7 @@ page = st.sidebar.radio(
 # Add to sidebar in ui/app.py after the navigation radio:
 st.sidebar.divider()
 try:
-    health = requests.get(f"{API}/health", timeout=3).json()
+    health = safe_get("/health")
     st.sidebar.success("✅ API connected")
 except Exception:
     st.sidebar.error("❌ API offline")
@@ -111,7 +111,7 @@ if page == "🏠 Overview":
 
     # Stats
     try:
-        # stats = requests.get(f"{API}/stats").json()
+        # stats = requests.get(f"{API}/stats").json()s
         # AFTER (safe):
         stats = safe_get("/stats", default={"nodes": {}, "relationships": {}})
         if not stats:
