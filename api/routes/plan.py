@@ -38,7 +38,7 @@ def build_context(classes: list[dict]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-@router.post("/")
+@router.post("")
 def create_plan(req: PlanRequest):
     # 1. Semantic search for relevant classes
     query_vector = embed_text(req.requirement)
