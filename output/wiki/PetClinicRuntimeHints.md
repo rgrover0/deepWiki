@@ -5,7 +5,7 @@
 **Annotations:** none
 
 ## Summary
-This class provides runtime hints for the application, playing a crucial role in its architecture by offering contextual information to enhance performance and decision-making. Its primary responsibility is to register hints that can be utilized by other components. The `registerHints` method is key to this functionality, as it enables the registration of these hints, allowing the application to adapt and optimize its behavior accordingly. With no fields or dependencies, this class relies solely on its method to fulfill its purpose, making it a lightweight yet essential component of the application.
+This Java class is responsible for providing runtime hints to the application, playing a crucial role in the overall architecture. It serves as a utility class, enabling the registration of hints that can be utilized by other components. The key method, registerHints, is a void method that allows for the registration of these hints, facilitating informed decision-making within the application. With no fields or dependencies, this class relies solely on its method to provide functionality. As part of the PetClinic application, it contributes to the application's overall efficiency and effectiveness.
 
 ## Methods
 | Method | Returns | Annotations |

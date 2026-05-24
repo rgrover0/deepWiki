@@ -5,29 +5,27 @@
 **Annotations:** @Entity, @Table(name = "owners")
 
 ## Summary
-The Owner class is an entity responsible for representing an owner's information in the application. It plays a crucial role in the application architecture by encapsulating data and behavior related to owners, serving as a central component in managing owner-pet relationships. Key methods, such as addPet and getPets, enable the management of pets associated with an owner, while getFullAddress and setTelephone allow for the manipulation of owner contact information. The class relies on fields like pets, telephone, city, and address to store relevant owner data, facilitating a comprehensive representation of owners within the application.
+The Owner entity represents an individual who owns pets in the application, responsible for encapsulating their details and relationships with pets. It plays a crucial role in the application architecture by providing a data model for storing owner information. Key methods include getters and setters for address, city, and telephone, as well as methods for managing pets, such as adding a pet or retrieving a list of pets. The class has fields for address, city, telephone, and a list of pets, which are essential for maintaining owner data. This entity is a fundamental component of the application's data model, enabling the storage and retrieval of owner information.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `hasPets` | `boolean` | - |
-| `getFullAddress` | `String` | - |
-| `addVisit` | `void` | - |
-| `toString` | `String` | @Override |
-| `getPet` | `Pet` | - |
-| `addPet` | `void` | - |
-| `getPets` | `List<Pet>` | - |
-| `setTelephone` | `void` | - |
-| `getTelephone` | `String` | - |
-| `setCity` | `void` | - |
-| `getCity` | `String` | - |
-| `setAddress` | `void` | - |
 | `getAddress` | `String` | - |
+| `setAddress` | `void` | - |
+| `getCity` | `String` | - |
+| `setCity` | `void` | - |
+| `getTelephone` | `String` | - |
+| `setTelephone` | `void` | - |
+| `getPets` | `List<Pet>` | - |
+| `addPet` | `void` | - |
+| `getPet` | `Pet` | - |
+| `toString` | `String` | @Override |
+| `addVisit` | `void` | - |
 
 ## Fields
 | Field | Type | Annotations |
 |-------|------|-------------|
-| `pets` | `List<Pet>` | @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER), @JoinColumn(name = "owner_id"), @OrderBy("name") |
-| `telephone` | `String` | @Column, @NotBlank, @Pattern(regexp = "\\d{10}", message = "{telephone.invalid}") |
-| `city` | `String` | @Column, @NotBlank |
 | `address` | `String` | @Column, @NotBlank |
+| `city` | `String` | @Column, @NotBlank |
+| `telephone` | `String` | @Column, @NotBlank, @Pattern(regexp = "\\d{10}", message = "{telephone.invalid}") |
+| `pets` | `List<Pet>` | @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER), @JoinColumn(name = "owner_id"), @OrderBy("name") |

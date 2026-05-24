@@ -10,98 +10,98 @@ classDiagram
     class BaseEntity["BaseEntity"]
     <<Class>> BaseEntity
     BaseEntity : +Integer id
-    BaseEntity : +isNew() boolean
-    BaseEntity : +setId() void
     BaseEntity : +getId() Integer
+    BaseEntity : +setId() void
+    BaseEntity : +isNew() boolean
     class NamedEntity["NamedEntity"]
     <<Class>> NamedEntity
     NamedEntity : +String name
-    NamedEntity : +toString() String
-    NamedEntity : +setName() void
     NamedEntity : +getName() String
+    NamedEntity : +setName() void
+    NamedEntity : +toString() String
     class Person["Person"]
     <<Class>> Person
-    Person : +String lastName
     Person : +String firstName
-    Person : +setLastName() void
-    Person : +getLastName() String
-    Person : +setFirstName() void
+    Person : +String lastName
     Person : +getFirstName() String
+    Person : +setFirstName() void
+    Person : +getLastName() String
+    Person : +setLastName() void
     class Owner["Owner"]
     <<Entity>> Owner
-    Owner : +List pets
-    Owner : +String telephone
-    Owner : +String city
     Owner : +String address
-    Owner : +addVisit() void
-    Owner : +toString() String
-    Owner : +getPet() Pet
-    Owner : +addPet() void
+    Owner : +String city
+    Owner : +String telephone
+    Owner : +List pets
+    Owner : +getAddress() String
+    Owner : +setAddress() void
+    Owner : +getCity() String
+    Owner : +setCity() void
     class OwnerController["OwnerController"]
     <<Controller>> OwnerController
-    OwnerController : +OwnerRepository owners
     OwnerController : +String VIEWS_OWNER_CREATE_OR_UPDATE_FORM
-    OwnerController : +showOwner() ModelAndView
-    OwnerController : +processUpdateOwnerForm() String
-    OwnerController : +initUpdateOwnerForm() String
-    OwnerController : +findPaginatedForOwnersLastName() Page
+    OwnerController : +OwnerRepository owners
+    OwnerController : +setAllowedFields() void
+    OwnerController : +findOwner() Owner
+    OwnerController : +initCreationForm() String
+    OwnerController : +processCreationForm() String
     class Pet["Pet"]
     <<Entity>> Pet
-    Pet : +Set visits
-    Pet : +PetType type
     Pet : +LocalDate birthDate
-    Pet : +addVisit() void
-    Pet : +getVisits() Collection
-    Pet : +setType() void
+    Pet : +PetType type
+    Pet : +Set visits
+    Pet : +setBirthDate() void
+    Pet : +getBirthDate() LocalDate
     Pet : +getType() PetType
+    Pet : +setType() void
     class PetController["PetController"]
     <<Controller>> PetController
-    PetController : +PetTypeRepository types
-    PetController : +OwnerRepository owners
     PetController : +String VIEWS_PETS_CREATE_OR_UPDATE_FORM
-    PetController : +updatePetDetails() void
-    PetController : +processUpdateForm() String
-    PetController : +initUpdateForm() String
-    PetController : +processCreationForm() String
+    PetController : +OwnerRepository owners
+    PetController : +PetTypeRepository types
+    PetController : +populatePetTypes() Collection
+    PetController : +findOwner() Owner
+    PetController : +findPet() Pet
+    PetController : +initOwnerBinder() void
     class PetType["PetType"]
     <<Entity>> PetType
     class PetTypeFormatter["PetTypeFormatter"]
     <<Component>> PetTypeFormatter
     PetTypeFormatter : +PetTypeRepository types
-    PetTypeFormatter : +parse() PetType
     PetTypeFormatter : +print() String
+    PetTypeFormatter : +parse() PetType
     class PetValidator["PetValidator"]
     <<Class>> PetValidator
     PetValidator : +String REQUIRED
-    PetValidator : +supports() boolean
     PetValidator : +validate() void
+    PetValidator : +supports() boolean
     class Visit["Visit"]
     <<Entity>> Visit
-    Visit : +String description
     Visit : +LocalDate date
-    Visit : +setDescription() void
-    Visit : +getDescription() String
-    Visit : +setDate() void
+    Visit : +String description
     Visit : +getDate() LocalDate
+    Visit : +setDate() void
+    Visit : +getDescription() String
+    Visit : +setDescription() void
     class VisitController["VisitController"]
     <<Controller>> VisitController
     VisitController : +OwnerRepository owners
-    VisitController : +processNewVisitForm() String
-    VisitController : +initNewVisitForm() String
-    VisitController : +loadPetWithVisit() Visit
     VisitController : +setAllowedFields() void
+    VisitController : +loadPetWithVisit() Visit
+    VisitController : +initNewVisitForm() String
+    VisitController : +processNewVisitForm() String
     class CacheConfiguration["CacheConfiguration"]
     <<Config>> CacheConfiguration
-    CacheConfiguration : +cacheConfiguration() javax_cache_configuration_Configuration
     CacheConfiguration : +petclinicCacheConfigurationCustomizer() JCacheManagerCustomizer
+    CacheConfiguration : +cacheConfiguration() javax_cache_configuration_Configuration
     class CrashController["CrashController"]
     <<Controller>> CrashController
     CrashController : +triggerException() String
     class WebConfiguration["WebConfiguration"]
     <<Config>> WebConfiguration
-    WebConfiguration : +addInterceptors() void
-    WebConfiguration : +localeChangeInterceptor() LocaleChangeInterceptor
     WebConfiguration : +localeResolver() LocaleResolver
+    WebConfiguration : +localeChangeInterceptor() LocaleChangeInterceptor
+    WebConfiguration : +addInterceptors() void
     class WelcomeController["WelcomeController"]
     <<Controller>> WelcomeController
     WelcomeController : +welcome() String
@@ -110,17 +110,17 @@ classDiagram
     class Vet["Vet"]
     <<Entity>> Vet
     Vet : +Set specialties
-    Vet : +addSpecialty() void
-    Vet : +getNrOfSpecialties() int
-    Vet : +getSpecialties() List
     Vet : +getSpecialtiesInternal() Set
+    Vet : +getSpecialties() List
+    Vet : +getNrOfSpecialties() int
+    Vet : +addSpecialty() void
     class VetController["VetController"]
     <<Controller>> VetController
     VetController : +VetRepository vetRepository
-    VetController : +showResourcesVetList() Vets
-    VetController : +findPaginated() Page
-    VetController : +addPaginationModel() String
     VetController : +showVetList() String
+    VetController : +addPaginationModel() String
+    VetController : +findPaginated() Page
+    VetController : +showResourcesVetList() Vets
     class Vets["Vets"]
     <<Class>> Vets
     Vets : +List vets

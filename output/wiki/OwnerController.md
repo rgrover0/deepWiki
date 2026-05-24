@@ -5,25 +5,25 @@
 **Annotations:** @Controller
 
 ## Summary
-The OwnerController class is responsible for handling owner-related operations, serving as a crucial component in the application's architecture. It plays a key role in managing owner data, acting as an intermediary between the user interface and the data access layer. This controller contains methods such as showOwner, processUpdateOwnerForm, and findOwner, which enable the retrieval, creation, and updating of owner information. The owners field, an instance of OwnerRepository, is a vital dependency, providing access to owner data, while the VIEWS_OWNER_CREATE_OR_UPDATE_FORM field stores a string representing the view for creating or updating owner forms. Overall, this class facilitates the interaction between the application's user interface and the underlying data storage, ensuring seamless owner data management.
+The OwnerController class is a controller responsible for handling owner-related operations in the application. It plays a crucial role in the application architecture, acting as an intermediary between the user interface and the data access layer. This class contains key methods such as findOwner, initCreationForm, and processCreationForm, which enable owner data retrieval, creation, and updating. The owners field, an instance of OwnerRepository, is a significant dependency that facilitates data access. Overall, the OwnerController manages owner data and provides necessary functionality to support the application's features.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `showOwner` | `ModelAndView` | @GetMapping("/owners/{ownerId}") |
-| `processUpdateOwnerForm` | `String` | @PostMapping("/owners/{ownerId}/edit") |
-| `initUpdateOwnerForm` | `String` | @GetMapping("/owners/{ownerId}/edit") |
-| `findPaginatedForOwnersLastName` | `Page<Owner>` | - |
-| `addPaginationModel` | `String` | - |
-| `processFindForm` | `String` | @GetMapping("/owners") |
-| `initFindForm` | `String` | @GetMapping("/owners/find") |
-| `processCreationForm` | `String` | @PostMapping("/owners/new") |
-| `initCreationForm` | `String` | @GetMapping("/owners/new") |
-| `findOwner` | `Owner` | @ModelAttribute("owner") |
 | `setAllowedFields` | `void` | @InitBinder |
+| `findOwner` | `Owner` | @ModelAttribute("owner") |
+| `initCreationForm` | `String` | @GetMapping("/owners/new") |
+| `processCreationForm` | `String` | @PostMapping("/owners/new") |
+| `initFindForm` | `String` | @GetMapping("/owners/find") |
+| `processFindForm` | `String` | @GetMapping("/owners") |
+| `addPaginationModel` | `String` | - |
+| `findPaginatedForOwnersLastName` | `Page<Owner>` | - |
+| `initUpdateOwnerForm` | `String` | @GetMapping("/owners/{ownerId}/edit") |
+| `processUpdateOwnerForm` | `String` | @PostMapping("/owners/{ownerId}/edit") |
+| `showOwner` | `ModelAndView` | @GetMapping("/owners/{ownerId}") |
 
 ## Fields
 | Field | Type | Annotations |
 |-------|------|-------------|
-| `owners` | `OwnerRepository` | - |
 | `VIEWS_OWNER_CREATE_OR_UPDATE_FORM` | `String` | - |
+| `owners` | `OwnerRepository` | - |

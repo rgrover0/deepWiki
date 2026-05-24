@@ -5,14 +5,14 @@
 **Annotations:** @Configuration, @SuppressWarnings("unused")
 
 ## Summary
-This configuration class is responsible for setting up web-related configurations for the application. It plays a crucial role in the application architecture by providing a centralized location for defining web-specific settings. The addInterceptors method allows for the addition of interceptors, while the localeChangeInterceptor and localeResolver methods enable the configuration of locale-related settings. This class utilizes the @Configuration annotation, indicating its purpose as a configuration class, and does not rely on any fields, instead focusing on method-based configuration. Overall, it provides a key component in the application's configuration, facilitating the management of web-related settings.
+The WebConfiguration class is a configuration component responsible for setting up locale-related settings in the application. It plays a crucial role in the application architecture by enabling internationalization support. This class provides key methods such as localeResolver and localeChangeInterceptor, which are used to resolve and change locales, respectively. The addInterceptors method is also defined to add interceptors for handling locale changes. With no fields defined, this class relies on its methods to configure the application's locale settings, making it a vital part of the application's infrastructure.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `addInterceptors` | `void` | @Override |
-| `localeChangeInterceptor` | `LocaleChangeInterceptor` | @Bean |
 | `localeResolver` | `LocaleResolver` | @Bean |
+| `localeChangeInterceptor` | `LocaleChangeInterceptor` | @Bean |
+| `addInterceptors` | `void` | @Override |
 
 ## Fields
 | Field | Type | Annotations |

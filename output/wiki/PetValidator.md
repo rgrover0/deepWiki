@@ -5,13 +5,13 @@
 **Annotations:** none
 
 ## Summary
-This Java class is responsible for validating pet-related data, ensuring it meets specific requirements. Within the application architecture, it plays a crucial role in maintaining data integrity. The `supports` method determines whether the validation process should proceed, while the `validate` method performs the actual validation. A key field, `REQUIRED`, is used to define necessary conditions. This class is a vital component in the overall application design, particularly in the owner package, where it helps to enforce data consistency and accuracy.
+This class is responsible for validating pet-related data, ensuring it meets the required criteria. Within the application architecture, it plays a crucial role in maintaining data integrity. The validate method is key to this process, checking for any inconsistencies or errors, while the supports method determines whether this validator is applicable. A REQUIRED field is also defined, highlighting the mandatory nature of certain data. This class is an essential component, working in conjunction with other parts of the application to guarantee accurate and reliable data.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `supports` | `boolean` | @Override |
 | `validate` | `void` | @Override |
+| `supports` | `boolean` | @Override |
 
 ## Fields
 | Field | Type | Annotations |

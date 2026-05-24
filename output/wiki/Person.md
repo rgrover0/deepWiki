@@ -5,18 +5,18 @@
 **Annotations:** @MappedSuperclass
 
 ## Summary
-The Person class serves as a foundation for entities with personal details, bearing the responsibility of encapsulating and managing first and last names. Within the application architecture, it plays a crucial role as a base class, leveraging the @MappedSuperclass annotation to provide a common set of attributes for inheriting entities. Key methods, such as setLastName and getLastName, as well as setFirstName and getFirstName, facilitate the manipulation and retrieval of personal details. The class relies on two important fields: lastName and firstName, both of type String, which store the respective personal details. This design enables a standardized and efficient management of personal information across the application.
+The Person class serves as a foundational entity in the application, responsible for encapsulating individual attributes. As a `@MappedSuperclass`, it plays a crucial role in the application architecture by providing a base mapping for subclasses. This class provides key methods such as `getFirstName` and `setFirstName`, which allow for the retrieval and modification of an individual's first name, while `getLastName` and `setLastName` serve a similar purpose for the last name. The `firstName` and `lastName` fields are essential in storing this information. Overall, this class provides a fundamental structure for representing individuals within the application.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `setLastName` | `void` | - |
-| `getLastName` | `String` | - |
-| `setFirstName` | `void` | - |
 | `getFirstName` | `String` | - |
+| `setFirstName` | `void` | - |
+| `getLastName` | `String` | - |
+| `setLastName` | `void` | - |
 
 ## Fields
 | Field | Type | Annotations |
 |-------|------|-------------|
-| `lastName` | `String` | @Column, @NotBlank |
 | `firstName` | `String` | @Column, @NotBlank |
+| `lastName` | `String` | @Column, @NotBlank |

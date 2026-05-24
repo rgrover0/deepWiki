@@ -5,15 +5,15 @@
 **Annotations:** @Entity, @Table(name = "vets")
 
 ## Summary
-This entity represents a veterinarian in the application, responsible for managing their specialties. It plays a crucial role in the application architecture, serving as a data model for veterinarians. The class provides key methods such as addSpecialty, which allows adding a new specialty, and getSpecialties, which retrieves a list of assigned specialties. The specialties field, a set of Specialty objects, stores the veterinarian's areas of expertise. This entity is annotated with @Entity and @Table, indicating its mapping to a database table, and is part of the org.springframework.samples.petclinic.vet package.
+The Vet entity is responsible for representing a veterinarian in the application, encapsulating their specialties and related data. As part of the application's domain model, it plays a crucial role in the overall architecture, interacting with other entities such as Specialty. Key methods include getSpecialtiesInternal and addSpecialty, which manage the veterinarian's specialties. The specialties field, a Set of Specialty objects, is a vital dependency, storing the veterinarian's areas of expertise. This entity is annotated with @Entity and @Table, indicating its mapping to a database table, and is located in the org.springframework.samples.petclinic.vet package.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `addSpecialty` | `void` | - |
-| `getNrOfSpecialties` | `int` | - |
-| `getSpecialties` | `List<Specialty>` | @XmlElement |
 | `getSpecialtiesInternal` | `Set<Specialty>` | - |
+| `getSpecialties` | `List<Specialty>` | @XmlElement |
+| `getNrOfSpecialties` | `int` | - |
+| `addSpecialty` | `void` | - |
 
 ## Fields
 | Field | Type | Annotations |

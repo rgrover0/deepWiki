@@ -5,14 +5,14 @@
 **Annotations:** @MappedSuperclass
 
 ## Summary
-The NamedEntity class serves as a base entity, providing a foundation for other classes to inherit its properties and behavior. Within the application architecture, it plays a crucial role in defining a common structure for entities that have a name. This class features key methods, including toString and setName, which enable the conversion to a string representation and modification of the name, respectively, while the getName method allows for name retrieval. The name field, a string type, is a vital component, storing the entity's name. As a @MappedSuperclass, it provides a mapped inheritance strategy for its subclasses.
+The NamedEntity class serves as a base class for entities that have a name, providing a common structure for inheritance. Within the application architecture, it plays a crucial role as a mapped superclass, allowing subclasses to inherit its properties. This class features key methods such as getName and setName, which enable retrieval and modification of the entity's name, as well as a toString method for string representation. The name field, a string type, is a vital component, storing the entity's name. As a mapped superclass, it facilitates a standardized approach to entity naming, streamlining data modeling and management.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `toString` | `String` | @Override |
-| `setName` | `void` | - |
 | `getName` | `String` | - |
+| `setName` | `void` | - |
+| `toString` | `String` | @Override |
 
 ## Fields
 | Field | Type | Annotations |

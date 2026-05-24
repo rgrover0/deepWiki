@@ -5,13 +5,13 @@
 **Annotations:** @Configuration(proxyBeanMethods = false), @EnableCaching
 
 ## Summary
-This configuration class is responsible for setting up caching in the application, enabling the use of caching mechanisms to improve performance. As part of the application architecture, it plays a crucial role in optimizing data access and storage. The `cacheConfiguration` method defines the caching configuration, while the `petclinicCacheConfigurationCustomizer` method customizes the JCache manager. With the `@EnableCaching` annotation, this class enables caching capabilities throughout the application, relying on dependencies to manage cache operations. Overall, this class provides a centralized configuration for caching, simplifying the management of cached data.
+This configuration class is responsible for setting up caching in the application, enabling the use of caching mechanisms to improve performance. As part of the application architecture, it plays a crucial role in optimizing data access and storage. The `petclinicCacheConfigurationCustomizer` method customizes the JCache manager, while the `cacheConfiguration` method defines the cache configuration. With the `@EnableCaching` annotation, this class enables caching capabilities throughout the application, relying on dependencies such as the JCache manager to function effectively. Overall, this class provides a centralized configuration for caching, simplifying the development process and enhancing application efficiency.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `cacheConfiguration` | `javax.cache.configuration.Configuration<Object, Object>` | - |
 | `petclinicCacheConfigurationCustomizer` | `JCacheManagerCustomizer` | @Bean |
+| `cacheConfiguration` | `javax.cache.configuration.Configuration<Object, Object>` | - |
 
 ## Fields
 | Field | Type | Annotations |

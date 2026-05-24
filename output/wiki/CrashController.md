@@ -5,7 +5,7 @@
 **Annotations:** @Controller
 
 ## Summary
-The CrashController class is a controller responsible for handling exception triggering within the application. As part of the application architecture, it plays a crucial role in testing and debugging by intentionally generating exceptions. The triggerException method is key to this functionality, allowing for the simulation of error scenarios. This class has no fields, relying on its method to fulfill its purpose. Overall, it provides a controlled environment for testing the application's error handling capabilities, making it a valuable component in the system's overall design and testing strategy.
+The CrashController class is a controller responsible for handling exception triggering within the application. As part of the application architecture, it plays a crucial role in testing and debugging error scenarios. This class contains a key method, triggerException, which takes a string parameter and is used to intentionally trigger an exception for testing purposes. With no fields, its functionality relies solely on method invocation. The CrashController is annotated with @Controller, indicating its role as a Spring MVC controller, and is packaged in the org.springframework.samples.petclinic.system package.
 
 ## Methods
 | Method | Returns | Annotations |

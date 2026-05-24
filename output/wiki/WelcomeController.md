@@ -5,7 +5,7 @@
 **Annotations:** @Controller
 
 ## Summary
-The WelcomeController class is a core component of the application, responsible for handling incoming requests and providing a welcome message. As a controller, it plays a crucial role in the application architecture, serving as an entry point for users. The welcome method is key to its functionality, accepting a string parameter to generate a personalized greeting. With no fields to maintain state, this class relies on its method to fulfill its purpose. Overall, it is a straightforward yet essential part of the system, facilitating user interaction and setting the tone for the application's user experience.
+The WelcomeController class is a core component of the application, responsible for handling initial user interactions. As a controller, it plays a crucial role in the application architecture, serving as an entry point for user requests. The welcome method is key to its functionality, processing a String parameter to provide a suitable response. With no fields to maintain state, this class relies on its method to fulfill its purpose. Overall, it is a straightforward yet essential part of the system, facilitating a user's introduction to the application.
 
 ## Methods
 | Method | Returns | Annotations |

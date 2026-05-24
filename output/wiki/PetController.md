@@ -5,25 +5,25 @@
 **Annotations:** @Controller, @RequestMapping("/owners/{ownerId}")
 
 ## Summary
-The PetController class is responsible for handling pet-related operations, serving as a crucial component in the application's architecture by bridging the gap between the user interface and the data access layer. As a controller, it plays a key role in managing the flow of data and requests. The class contains key methods such as updatePetDetails and processUpdateForm, which enable the modification of existing pet records, while initCreationForm and processCreationForm facilitate the creation of new pet entries. Important fields include the PetTypeRepository and OwnerRepository dependencies, which provide access to pet and owner data, respectively.
+The PetController class is responsible for handling owner and pet-related operations, serving as a crucial component in the application's architecture. It plays a key role in managing the interaction between owners and their pets, facilitating the creation and update of pet details. This controller utilizes key methods such as initCreationForm and processUpdateForm to handle pet creation and update processes. The class relies on important fields, including the OwnerRepository and PetTypeRepository, which provide access to owner and pet type data. Overall, it acts as a central point for pet management, leveraging its dependencies to provide a seamless user experience.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `updatePetDetails` | `void` | - |
-| `processUpdateForm` | `String` | @PostMapping("/pets/{petId}/edit") |
-| `initUpdateForm` | `String` | @GetMapping("/pets/{petId}/edit") |
-| `processCreationForm` | `String` | @PostMapping("/pets/new") |
-| `initCreationForm` | `String` | @GetMapping("/pets/new") |
-| `initPetBinder` | `void` | @InitBinder("pet") |
-| `initOwnerBinder` | `void` | @InitBinder("owner") |
-| `findPet` | `Pet` | @ModelAttribute("pet") |
-| `findOwner` | `Owner` | @ModelAttribute("owner") |
 | `populatePetTypes` | `Collection<PetType>` | @ModelAttribute("types") |
+| `findOwner` | `Owner` | @ModelAttribute("owner") |
+| `findPet` | `Pet` | @ModelAttribute("pet") |
+| `initOwnerBinder` | `void` | @InitBinder("owner") |
+| `initPetBinder` | `void` | @InitBinder("pet") |
+| `initCreationForm` | `String` | @GetMapping("/pets/new") |
+| `processCreationForm` | `String` | @PostMapping("/pets/new") |
+| `initUpdateForm` | `String` | @GetMapping("/pets/{petId}/edit") |
+| `processUpdateForm` | `String` | @PostMapping("/pets/{petId}/edit") |
+| `updatePetDetails` | `void` | - |
 
 ## Fields
 | Field | Type | Annotations |
 |-------|------|-------------|
-| `types` | `PetTypeRepository` | - |
-| `owners` | `OwnerRepository` | - |
 | `VIEWS_PETS_CREATE_OR_UPDATE_FORM` | `String` | - |
+| `owners` | `OwnerRepository` | - |
+| `types` | `PetTypeRepository` | - |

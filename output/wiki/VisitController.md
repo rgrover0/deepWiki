@@ -5,15 +5,15 @@
 **Annotations:** @Controller
 
 ## Summary
-The VisitController class is a controller responsible for handling visit-related operations in the application. As part of the application architecture, it plays a crucial role in managing the interaction between the user interface and the data access layer. This class contains key methods such as processNewVisitForm and initNewVisitForm, which are used to process and initialize new visit forms, respectively. The loadPetWithVisit method is also significant, as it loads a pet with its associated visit. The owners field, which is an instance of OwnerRepository, is an important dependency that enables data access and manipulation. Overall, this controller ensures seamless visit management in the application.
+The VisitController class is a core component responsible for handling visit-related operations in the application. As a controller, it plays a crucial role in the application architecture, serving as an intermediary between the user interface and the business logic. This class provides key methods such as setAllowedFields, loadPetWithVisit, and processNewVisitForm, which enable the creation and management of new visits. The owners field, an instance of OwnerRepository, is a vital dependency that facilitates access to owner data. Overall, this controller ensures seamless visit management, leveraging its methods and dependencies to provide a robust user experience.
 
 ## Methods
 | Method | Returns | Annotations |
 |--------|---------|-------------|
-| `processNewVisitForm` | `String` | @PostMapping("/owners/{ownerId}/pets/{petId}/visits/new") |
-| `initNewVisitForm` | `String` | @GetMapping("/owners/{ownerId}/pets/{petId}/visits/new") |
-| `loadPetWithVisit` | `Visit` | @ModelAttribute("visit") |
 | `setAllowedFields` | `void` | @InitBinder |
+| `loadPetWithVisit` | `Visit` | @ModelAttribute("visit") |
+| `initNewVisitForm` | `String` | @GetMapping("/owners/{ownerId}/pets/{petId}/visits/new") |
+| `processNewVisitForm` | `String` | @PostMapping("/owners/{ownerId}/pets/{petId}/visits/new") |
 
 ## Fields
 | Field | Type | Annotations |
