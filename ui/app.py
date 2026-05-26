@@ -106,16 +106,31 @@ page = st.sidebar.radio(
     "Navigate",
     [
         "🏠 Overview",
+        "🏛️ Suite Overview",
         "🔍 Class Explorer",
         "🔎 Semantic Search",
         "💬 Ask DeepWiki",
+        "🔀 Flow Tracer",
         "📋 Plan & Tests",
         "📊 Token Metrics",
-        "⚖️ Live Comparison",    # ← add after Token Metrics
+        "⚖️ Live Comparison",
+        "📡 API Catalog",
     ]
 )
 
-# Add to sidebar in ui/app.py after the navigation radio:
+st.sidebar.divider()
+
+# ── Suite selector ─────────────────────────────────────────
+suites_data = safe_get("/suite", default={"suites": []})
+suite_list  = suites_data.get("suites", []) if suites_data else []
+suite_names = [s["name"] for s in suite_list] if suite_list else ["Pet Management Platform"]
+suite_ids   = [s["id"]   for s in suite_list] if suite_list else ["pet-management-platform"]
+
+selected_suite_name = st.sidebar.selectbox("Suite", suite_names, key="suite_selector")
+selected_suite_idx  = suite_names.index(selected_suite_name) if selected_suite_name in suite_names else 0
+selected_suite_id   = suite_ids[selected_suite_idx]
+st.session_state["active_suite_id"] = selected_suite_id
+
 st.sidebar.divider()
 try:
     health = safe_get("/health")
@@ -127,7 +142,7 @@ try:
 except Exception:
     st.sidebar.error("❌ API offline")
     st.sidebar.code("uvicorn api.main:app --reload --port 8000")
-st.sidebar.caption("Spring PetClinic · Local POC")
+st.sidebar.caption(f"{selected_suite_name} · Local POC")
 
 # ── OVERVIEW ──────────────────────────────────────────────
 if page == "🏠 Overview":
@@ -213,6 +228,76 @@ if page == "🏠 Overview":
         st.info("No architecture diagram found. Run Iteration 5 first.")
 
 
+# ── SUITE OVERVIEW ─────────────────────────────────────────
+elif page == "🏛️ Suite Overview":
+    suite_id = st.session_state.get("active_suite_id", "pet-management-platform")
+    suite    = safe_get(f"/suite/{suite_id}", default=None)
+
+    if not suite:
+        st.title("🏛️ Suite Overview")
+        st.info(
+            "No suite data found. Run `python run_iteration17.py` to bootstrap suites, "
+            "or start Neo4j and call `POST /suite/bootstrap`."
+        )
+        st.stop()
+
+    st.title(f"🏛️ {suite['name']}")
+    st.caption(suite.get("description", ""))
+
+    coverage = suite.get("coverage", {})
+    total    = coverage.get("total_classes", 0)
+    with_wiki = coverage.get("wiki_coverage", 0)
+    cov_pct  = coverage.get("coverage_pct", 0)
+
+    repos    = suite.get("repos", [])
+    total_apis = sum(r.get("api_count", 0) for r in repos)
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Repositories",    len(repos))
+    col2.metric("API Endpoints",   total_apis)
+    col3.metric("Classes",         total)
+    col4.metric("Wiki Coverage",   f"{cov_pct}%",
+                delta=f"{with_wiki}/{total} classes documented")
+
+    st.divider()
+
+    # Repository cards
+    st.subheader("Repositories in Suite")
+    for repo in repos:
+        lang_badge = {"java": "☕ Java", "typescript": "🔷 TypeScript"}.get(
+            repo.get("language", ""), repo.get("language", "?")
+        )
+        with st.container(border=True):
+            col1, col2, col3 = st.columns([3, 1, 1])
+            col1.markdown(f"**{repo['name']}**  \n`{repo['id']}`")
+            col2.caption(lang_badge)
+            col3.metric("Endpoints", repo.get("api_count", 0))
+
+    st.divider()
+
+    # Suite-level Ask
+    st.subheader("💬 Ask Across Suite")
+    suite_q = st.text_input(
+        "Question (searches all repos in suite)",
+        placeholder="How does owner creation work across services?"
+    )
+    if st.button("Ask Suite", type="primary") and suite_q:
+        with st.spinner("Searching across suite..."):
+            resp = safe_post("/ask", {
+                "question": suite_q,
+                "top_k":    6,
+                "scope":    "suite",
+                "suite_id": suite_id,
+            }, default={"answer": "", "sources": [], "scores": []})
+        if resp:
+            st.success(resp.get("answer", "No answer."))
+            sources = resp.get("sources", [])
+            if sources:
+                st.caption("Sources: " + ", ".join(f"`{s}`" for s in sources))
+            st.caption(f"Intent: `{resp.get('intent', '?')}` · "
+                       f"Tokens: {resp.get('token_count', 0)}")
+
+
 # ── CLASS EXPLORER ─────────────────────────────────────────
 elif page == "🔍 Class Explorer":
     st.title("🔍 Class Explorer")
@@ -267,38 +352,71 @@ elif page == "🔍 Class Explorer":
 # ── SEMANTIC SEARCH ────────────────────────────────────────
 elif page == "🔎 Semantic Search":
     st.title("🔎 Semantic Search")
-    st.caption("Search classes by meaning, not just keywords")
+    st.caption("Search classes and methods by meaning, not just keywords")
 
-    query = st.text_input("Search query", placeholder="Which class handles pet data?")
+    query = st.text_input("Search query",
+                          placeholder="Find methods that validate email")
 
-    col1, col2 = st.columns([1, 3])
-    top_k = col1.slider("Results", 1, 10, 5)
-
+    col1, col2, col3, col4 = st.columns([1, 2, 2, 2])
+    top_k      = col1.slider("Results", 1, 10, 5)
+    unit_type  = col2.selectbox("Unit type",
+                                ["Both", "Classes only", "Methods only"],
+                                help="Filter by class or method")
+    scope      = col3.selectbox("Scope",
+                                ["repo", "suite", "cross_suite"],
+                                format_func=lambda x: {
+                                    "repo": "This repo",
+                                    "suite": "Whole suite",
+                                    "cross_suite": "All repos",
+                                }[x])
     types_list = ["All", "REST_CONTROLLER", "SERVICE",
                   "REPOSITORY", "ENTITY", "COMPONENT"]
-    filter_type = col2.selectbox("Filter by type", types_list)
+    filter_type = col4.selectbox("Class type filter", types_list)
+
+    suite_id = st.session_state.get("active_suite_id", "pet-management-platform")
 
     if query:
+        unit_type_param = None
+        if unit_type == "Classes only":
+            unit_type_param = "class"
+        elif unit_type == "Methods only":
+            unit_type_param = "method"
+
         payload = {
-            "query": query,
-            "top_k": top_k,
-            "component_type": None if filter_type == "All" else filter_type
+            "query":          query,
+            "top_k":          top_k,
+            "component_type": None if filter_type == "All" else filter_type,
+            "unit_type":      unit_type_param,
+            "scope":          scope,
+            "suite_id":       suite_id,
         }
-        resp = safe_post("/search", payload, default={"results": []})
+        resp = safe_post("/search", payload, default={"results": [], "count": 0})
 
         st.divider()
         st.subheader(f"Results for: *{query}*")
+        st.caption(f"{resp.get('count', 0)} results · scope: `{scope}`")
 
-        for i, r in enumerate(resp["results"], 1):
+        for i, r in enumerate(resp.get("results", []), 1):
             score_pct = int(r["score"] * 100)
+            rtype     = r.get("unit_type", "class")
+
             with st.container():
                 col1, col2, col3 = st.columns([3, 2, 1])
-                col1.markdown(f"**{i}. {r['name']}**")
-                col2.caption(f"`{r['component_type']}`")
-                col3.progress(score_pct, text=f"{score_pct}%")
 
-                if r.get("methods"):
-                    st.caption(f"Methods: {', '.join(r['methods'][:5])}")
+                if rtype == "method":
+                    col1.markdown(
+                        f"**{i}. `{r['class_name']}.{r['name']}()`**"
+                    )
+                    col2.caption("method")
+                    col3.progress(score_pct, text=f"{score_pct}%")
+                    if r.get("logic_summary"):
+                        st.caption(r["logic_summary"])
+                else:
+                    col1.markdown(f"**{i}. {r['name']}**")
+                    col2.caption(f"`{r['component_type']}`")
+                    col3.progress(score_pct, text=f"{score_pct}%")
+                    if r.get("methods"):
+                        st.caption(f"Methods: {', '.join(r['methods'][:5])}")
                 st.divider()
 
 
@@ -330,17 +448,39 @@ elif page == "💬 Ask DeepWiki":
         placeholder="Ask about any part of the codebase..."
     )
 
+    col_scope, col_topk = st.columns([2, 1])
+    ask_scope  = col_scope.selectbox("Search scope", ["repo", "suite", "cross_suite"],
+                                     format_func=lambda x: {
+                                         "repo": "This repo",
+                                         "suite": "Whole suite",
+                                         "cross_suite": "All repos",
+                                     }[x], key="ask_scope")
+    ask_top_k  = col_topk.slider("Sources", 2, 6, 4, key="ask_top_k")
+    suite_id   = st.session_state.get("active_suite_id", "pet-management-platform")
+
     if st.button("🔍 Ask", type="primary") and question:
         with st.spinner("Searching wiki and generating answer..."):
-            resp = safe_post("/ask", {"question": question, "top_k": 4}, default={"answer": "", "sources": [], "scores": []})
+            resp = safe_post("/ask", {
+                "question": question,
+                "top_k":    ask_top_k,
+                "scope":    ask_scope,
+                "suite_id": suite_id,
+            }, default={"answer": "", "sources": [], "scores": []})
 
         st.subheader("💡 Answer")
-        st.success(resp["answer"])
+        st.success(resp.get("answer", ""))
 
-        st.subheader("📎 Sources")
-        cols = st.columns(len(resp["sources"]))
-        for col, src, score in zip(cols, resp["sources"], resp["scores"]):
-            col.metric(src, f"{int(score * 100)}% match")
+        intent = resp.get("intent", "")
+        if intent:
+            st.caption(f"Intent detected: `{intent}` · Tokens: {resp.get('token_count', 0)}")
+
+        sources = resp.get("sources", [])
+        scores  = resp.get("scores", [])
+        if sources:
+            st.subheader("📎 Sources")
+            cols = st.columns(min(len(sources), 4))
+            for col, src, score in zip(cols, sources, scores):
+                col.metric(src, f"{int(score * 100)}% match")
 
 # ── PLAN & TESTS ───────────────────────────────────────────
 elif page == "📋 Plan & Tests":
@@ -799,3 +939,176 @@ while answer quality remains identical.
             safe_delete("/compare/history")
             st.success("History cleared")
             st.rerun()
+
+# ── FLOW TRACER ────────────────────────────────────────────
+elif page == "🔀 Flow Tracer":
+    st.title("🔀 Flow Tracer")
+    st.caption("Trace execution flow from any entry point — backed by real CALLS edges")
+
+    EXAMPLES = [
+        "How does pet owner creation work?",
+        "How does owner search work?",
+        "Trace pet creation flow",
+        "How does visit creation work?",
+    ]
+
+    cols = st.columns(2)
+    for i, ex in enumerate(EXAMPLES):
+        if cols[i % 2].button(ex, use_container_width=True, key=f"flow_ex_{i}"):
+            st.session_state["flow_question"] = ex
+
+    st.divider()
+
+    col1, col2 = st.columns([3, 1])
+    question  = col1.text_input(
+        "Describe the flow you want to trace",
+        value=st.session_state.get("flow_question", ""),
+        placeholder="How does owner creation work?"
+    )
+    max_hops = col2.slider("Max hops", 1, 6, 6)
+
+    if st.button("🔍 Trace Flow", type="primary") and question:
+        # ── Intent classify + entry extract ────────────────
+        with st.spinner("Classifying intent and extracting entry point..."):
+            meta = safe_post("/ask", {"question": question, "top_k": 1}, default={})
+
+        # Use /flow directly for the trace display
+        with st.spinner("Tracing execution flow..."):
+            from api.intent_classifier import extract_entry_point
+            entry = extract_entry_point(question)
+            flow  = safe_post("/flow", {"entry_point": entry, "max_hops": max_hops}, default={})
+
+        steps = flow.get("steps", [])
+
+        if not steps:
+            st.warning(f"No flow found for entry point '{entry}'. "
+                       "CALLS edges are populated after Iteration 14 runs.")
+        else:
+            st.subheader(f"Flow: {entry}")
+            st.caption(f"Entry point detected: `{entry}`")
+
+            LAYER_COLOR = {
+                "HTTP":      "#3498db",
+                "Service":   "#2ecc71",
+                "Data":      "#e67e22",
+                "Component": "#9b59b6",
+                "Code":      "#95a5a6",
+            }
+
+            for step in steps:
+                color = LAYER_COLOR.get(step["layer"], "#95a5a6")
+                badge = (
+                    f"<span style='background:{color};color:white;"
+                    f"padding:2px 8px;border-radius:4px;font-size:0.8em'>"
+                    f"{step['layer']}</span>"
+                )
+                with st.container():
+                    st.markdown(
+                        f"{badge} **Step {step['step']}: "
+                        f"`{step['class_name']}.{step['method_name']}()`**",
+                        unsafe_allow_html=True,
+                    )
+                    logic = step.get("logic_summary", "")
+                    st.caption(logic if logic else "_No logic summary yet — run Iteration 14_")
+                    st.divider()
+
+            st.subheader("💬 Explanation")
+            st.success(flow.get("explanation", ""))
+
+            token_count = flow.get("token_count", 0)
+            st.caption(f"Context tokens used: **{token_count}** (ceiling: 600)")
+            if token_count > 0:
+                pct = min(token_count / 600, 1.0)
+                st.progress(pct, text=f"{token_count} / 600 tokens")
+
+
+# ── API CATALOG ────────────────────────────────────────────
+elif page == "📡 API Catalog":
+    import pandas as pd
+
+    st.title("📡 API Catalog")
+    st.caption("All HTTP endpoints exposed and consumed by this repository")
+
+    repo_id = st.sidebar.text_input("Repository ID", value="spring-petclinic")
+
+    # ── EXPOSED ENDPOINTS ──────────────────────────────────
+    st.subheader("Endpoints Exposed")
+    data = safe_get(f"/contracts?repo_id={repo_id}", default={"contracts": [], "count": 0})
+    contracts = data.get("contracts", [])
+
+    if contracts:
+        st.caption(f"{data['count']} endpoints found")
+
+        METHOD_COLORS = {
+            "GET":    "#2ecc71",
+            "POST":   "#3498db",
+            "PUT":    "#e67e22",
+            "DELETE": "#e74c3c",
+            "PATCH":  "#9b59b6",
+        }
+
+        for c in contracts:
+            method = c.get("http_method", "")
+            color  = METHOD_COLORS.get(method, "#95a5a6")
+            with st.container():
+                col1, col2, col3, col4 = st.columns([1, 3, 2, 2])
+                col1.markdown(
+                    f"<span style='background:{color};color:white;"
+                    f"padding:2px 8px;border-radius:4px;font-weight:bold'>"
+                    f"{method}</span>",
+                    unsafe_allow_html=True,
+                )
+                col2.code(c.get("path", ""), language=None)
+                col3.caption(c.get("controller_class", ""))
+                col4.caption(c.get("controller_method", ""))
+
+        st.divider()
+
+        # Downloadable table
+        df = pd.DataFrame([
+            {
+                "Method":       c.get("http_method", ""),
+                "Path":         c.get("path", ""),
+                "Controller":   c.get("controller_class", ""),
+                "Action":       c.get("controller_method", ""),
+                "Returns":      c.get("return_type", ""),
+                "Request Body": c.get("request_body_type") or "—",
+            }
+            for c in contracts
+        ])
+        with st.expander("View as table"):
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        st.download_button(
+            "⬇️ Export CSV",
+            data=df.to_csv(index=False),
+            file_name=f"{repo_id}_api_catalog.csv",
+            mime="text/csv",
+        )
+    else:
+        st.info(
+            "No API contracts found. Run `python run_iteration15.py` to extract endpoints."
+        )
+
+    # ── CONSUMED ENDPOINTS ─────────────────────────────────
+    st.subheader("Endpoints Consumed")
+    consumed = safe_get(
+        f"/contracts/consumers?repo_id={repo_id}",
+        default={"consumed": [], "count": 0}
+    )
+    consumed_list = consumed.get("consumed", [])
+
+    if consumed_list:
+        st.caption(f"{consumed['count']} consumed endpoints")
+        df_c = pd.DataFrame([
+            {
+                "Method":      c.get("http_method", ""),
+                "Path":        c.get("path", ""),
+                "Provider":    c.get("controller_class", ""),
+                "Caller":      c.get("caller_class", ""),
+                "Confidence":  f"{int(c.get('confidence', 0) * 100)}%",
+            }
+            for c in consumed_list
+        ])
+        st.dataframe(df_c, use_container_width=True, hide_index=True)
+    else:
+        st.info("No consumed endpoints yet. Angular analysis (Iteration 18) will populate this.")

@@ -25,6 +25,20 @@ services:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
 
+  code-analysis-service:
+    build: ./code-analysis-service
+    container_name: deepwiki-code-analysis
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+  ts-analysis-service:
+    build: ./ts-analysis-service
+    container_name: deepwiki-ts-analysis
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+
 volumes:
   neo4j_data:
   qdrant_data:

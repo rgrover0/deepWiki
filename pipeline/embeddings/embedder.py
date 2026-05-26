@@ -27,6 +27,19 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
     ).tolist()
 
 
+def build_method_text(cls_name: str, method: dict, logic_summary: str) -> str:
+    """Build searchable text for a method, matching the architecture spec."""
+    params      = ", ".join(method.get("parameters", [])) or "none"
+    annotations = ", ".join(method.get("annotations", [])) or "none"
+    return (
+        f"Method: {cls_name}.{method['name']}. "
+        f"Returns: {method.get('return_type', 'void')}. "
+        f"Params: {params}. "
+        f"Annotations: {annotations}. "
+        f"Logic: {logic_summary or method['name']}."
+    )
+
+
 def build_class_text(cls: dict) -> str:
     """Build searchable text description for a class."""
     method_names = ", ".join(

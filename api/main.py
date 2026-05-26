@@ -19,12 +19,18 @@ from api.routes import search
 from api.routes import ask
 from api.routes import plan
 from api.routes import compare
+from api.routes import contracts
+from api.routes import flow
+from api.routes import suite
 
-app.include_router(classes.router, prefix="/classes", tags=["Classes"])
-app.include_router(search.router,  prefix="/search",  tags=["Search"])
-app.include_router(ask.router,     prefix="/ask",     tags=["Ask"])
-app.include_router(plan.router,    prefix="/plan",    tags=["Plan"])
-app.include_router(compare.router, prefix="/compare", tags=["Compare"])
+app.include_router(classes.router,   prefix="/classes",   tags=["Classes"])
+app.include_router(search.router,    prefix="/search",    tags=["Search"])
+app.include_router(ask.router,       prefix="/ask",       tags=["Ask"])
+app.include_router(plan.router,      prefix="/plan",      tags=["Plan"])
+app.include_router(compare.router,   prefix="/compare",   tags=["Compare"])
+app.include_router(contracts.router, prefix="/contracts", tags=["Contracts"])
+app.include_router(flow.router,      prefix="/flow",      tags=["Flow"])
+app.include_router(suite.router,     prefix="/suite",     tags=["Suite"])
 
 
 @app.get("/health")

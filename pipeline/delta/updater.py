@@ -98,7 +98,9 @@ def update_qdrant_for_class(cls: dict, summary: str, point_id: int):
                 "file":           cls.get("file", ""),
                 "annotations":    cls.get("annotations", []),
                 "method_names":   [m["name"] for m in cls.get("methods", [])],
-                "field_names":    [f["name"] for f in cls.get("fields", [])]
+                "field_names":    [f["name"] for f in cls.get("fields", [])],
+                "repo_id":        cls.get("repo_id", "spring-petclinic"),
+                "unit_type":      "class",
             }
         )]
     )

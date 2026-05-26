@@ -17,11 +17,18 @@ def get_driver():
 def setup_schema(driver):
     """Create constraints and indexes."""
     queries = [
+        # Phase 0 — base nodes
         "CREATE CONSTRAINT class_unique IF NOT EXISTS FOR (c:Class) REQUIRE c.name IS UNIQUE",
         "CREATE CONSTRAINT package_unique IF NOT EXISTS FOR (p:Package) REQUIRE p.name IS UNIQUE",
         "CREATE CONSTRAINT file_unique IF NOT EXISTS FOR (f:JavaFile) REQUIRE f.path IS UNIQUE",
         "CREATE INDEX method_id IF NOT EXISTS FOR (m:Method) ON (m.id)",
         "CREATE INDEX field_id IF NOT EXISTS FOR (f:Field) ON (f.id)",
+        # Iteration 12 — hierarchy + API nodes
+        "CREATE CONSTRAINT suite_unique IF NOT EXISTS FOR (s:ApplicationSuite) REQUIRE s.id IS UNIQUE",
+        "CREATE CONSTRAINT repo_unique IF NOT EXISTS FOR (r:Repository) REQUIRE r.id IS UNIQUE",
+        "CREATE CONSTRAINT module_unique IF NOT EXISTS FOR (m:Module) REQUIRE m.id IS UNIQUE",
+        "CREATE CONSTRAINT api_contract_unique IF NOT EXISTS FOR (a:APIContract) REQUIRE a.id IS UNIQUE",
+        "CREATE INDEX api_impact_id IF NOT EXISTS FOR (i:APIContractImpact) ON (i.id)",
     ]
     with driver.session() as session:
         for q in queries:

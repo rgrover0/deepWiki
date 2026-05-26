@@ -1,7 +1,41 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from pipeline.graph.schema import get_driver
+from pipeline.embeddings.embedder import embed_text
+from pipeline.embeddings.vector_store import get_client, semantic_search
 
 router = APIRouter()
+
+
+class SearchRequest(BaseModel):
+    query: str
+    top_k: int = 5
+    component_type: str = None
+    unit_type: str = None          # "class" | "method" | None (both)
+    scope: str = "repo"            # "repo" | "suite" | "cross_suite"
+    repo_id: str = "spring-petclinic"
+    suite_id: str = "pet-management-platform"
+
+
+@router.post("")
+def semantic_search_endpoint(req: SearchRequest):
+    """Vector similarity search across classes and/or methods."""
+    query_vector = embed_text(req.query)
+    client       = get_client()
+
+    repo_filter  = req.repo_id  if req.scope == "repo"   else None
+    suite_filter = req.suite_id if req.scope == "suite"  else None
+
+    results = semantic_search(
+        client,
+        query_vector,
+        top_k=req.top_k,
+        component_type=req.component_type,
+        repo_id=repo_filter,
+        suite_id=suite_filter,
+        unit_type=req.unit_type,
+    )
+    return {"results": results, "scope": req.scope, "count": len(results)}
 
 
 @router.get("/")
