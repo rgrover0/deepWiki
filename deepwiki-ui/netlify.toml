@@ -1,6 +1,6 @@
 [build]
   base    = "deepwiki-ui"
-  command = "npm run build -- --configuration production"
+  command = "npm run build -- --configuration=production"
   publish = "dist/deepwiki-ui/browser"
 
 [[redirects]]

@@ -1,17 +1,17 @@
 // Figma design tokens as SCSS variables
 // Mirror of tailwind.config.js extended colors — use for non-Tailwind contexts
 
-// Light theme
+// Penske-inspired navy blue + yellow theme
 $color-background:          #ffffff;
-$color-foreground:          #030213;
-$color-primary:             #030213;
+$color-foreground:          #1a1a2e;
+$color-primary:             #003087;
 $color-primary-foreground:  #ffffff;
-$color-secondary:           #f3f3f5;
-$color-muted:               #ececf0;
-$color-muted-foreground:    #717182;
-$color-accent:              #e9ebef;
-$color-border:              rgba(0, 0, 0, 0.1);
-$color-destructive:         #d4183d;
+$color-secondary:           #f0f4f8;
+$color-muted:               #e2e8f0;
+$color-muted-foreground:    #4a5568;
+$color-accent:              #e8f0fb;
+$color-border:              rgba(0, 48, 135, 0.15);
+$color-destructive:         #dc2626;
 
 // Border radius
 $radius: 0.625rem;

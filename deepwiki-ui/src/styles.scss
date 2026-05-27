@@ -1,9 +1,10 @@
+@use './styles/variables' as *;
+@use './styles/graph';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@use './styles/variables' as *;
-@use './styles/graph';
 
 /* Google Fonts — Inter */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -12,7 +13,7 @@
 body {
   font-family: 'Inter', system-ui, sans-serif;
   background: #ffffff;
-  color: #030213;
+  color: #1a1a2e;
   margin: 0;
 }
 

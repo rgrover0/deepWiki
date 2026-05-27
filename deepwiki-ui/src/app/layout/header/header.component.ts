@@ -12,21 +12,21 @@ import { LucideAngularModule } from 'lucide-angular';
       <div class="container mx-auto flex h-16 items-center px-4">
 
         <a routerLink="/" class="flex items-center space-x-2">
-          <lucide-icon name="layers" class="h-6 w-6 text-yellow-400" />
+          <lucide-icon name="layers" class="h-6 w-6 text-penske-yellow" />
           <span class="font-bold text-xl">DeepWiki</span>
         </a>
 
         <nav class="ml-10 flex gap-6">
-          <a routerLink="/" routerLinkActive="text-yellow-400" [routerLinkActiveOptions]="{exact:true}"
-             class="text-sm font-medium flex items-center gap-2 hover:text-yellow-400 transition-colors">
+          <a routerLink="/" routerLinkActive="text-penske-yellow" [routerLinkActiveOptions]="{exact:true}"
+             class="text-sm font-medium flex items-center gap-2 hover:text-penske-yellow transition-colors">
             <lucide-icon name="layers" class="h-4 w-4" /> All Projects
           </a>
-          <a routerLink="/search" routerLinkActive="text-yellow-400"
-             class="text-sm font-medium flex items-center gap-2 hover:text-yellow-400 transition-colors">
+          <a routerLink="/search" routerLinkActive="text-penske-yellow"
+             class="text-sm font-medium flex items-center gap-2 hover:text-penske-yellow transition-colors">
             <lucide-icon name="search" class="h-4 w-4" /> Search
           </a>
-          <a routerLink="/graph" routerLinkActive="text-yellow-400"
-             class="text-sm font-medium flex items-center gap-2 hover:text-yellow-400 transition-colors">
+          <a routerLink="/graph" routerLinkActive="text-penske-yellow"
+             class="text-sm font-medium flex items-center gap-2 hover:text-penske-yellow transition-colors">
             <lucide-icon name="share-2" class="h-4 w-4" /> Architecture
           </a>
         </nav>
@@ -41,7 +41,7 @@ import { LucideAngularModule } from 'lucide-angular';
             (keyup.enter)="onSearch(qs.value)"
             class="pl-8 w-full h-10 rounded-md bg-primary-foreground/10 border border-primary-foreground/20
                    text-primary-foreground placeholder:text-primary-foreground/60 text-sm px-3 py-2
-                   focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                   focus:outline-none focus:ring-2 focus:ring-penske-yellow"
           />
         </div>
 
