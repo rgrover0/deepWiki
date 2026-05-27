@@ -29,6 +29,10 @@ def setup_schema(driver):
         "CREATE CONSTRAINT module_unique IF NOT EXISTS FOR (m:Module) REQUIRE m.id IS UNIQUE",
         "CREATE CONSTRAINT api_contract_unique IF NOT EXISTS FOR (a:APIContract) REQUIRE a.id IS UNIQUE",
         "CREATE INDEX api_impact_id IF NOT EXISTS FOR (i:APIContractImpact) ON (i.id)",
+        # Iteration 23 — Confluence nodes
+        "CREATE CONSTRAINT confluence_page_unique IF NOT EXISTS FOR (p:ConfluencePage) REQUIRE p.id IS UNIQUE",
+        "CREATE INDEX contradiction_flag_page IF NOT EXISTS FOR (f:ContradictionFlag) ON (f.page_id)",
+        "CREATE CONSTRAINT feedback_unique IF NOT EXISTS FOR (f:Feedback) REQUIRE f.id IS UNIQUE",
     ]
     with driver.session() as session:
         for q in queries:

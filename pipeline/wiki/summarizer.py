@@ -1,13 +1,10 @@
-import os
 import json
 import time
 from pathlib import Path
-from groq import Groq
 from dotenv import load_dotenv
+from api.model_router import route as model_route
 
 load_dotenv()
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 METHOD_CACHE_FILE = Path("output/cache/method_logic_cache.json")
 
@@ -76,26 +73,21 @@ def build_prompt(cls: dict) -> str:
 
 
 def summarize_class(cls: dict, retries: int = 3) -> str:
-    prompt = build_prompt(cls)
+    prompt  = build_prompt(cls)
+    adapter = model_route("wiki_generation", content_size=len(prompt))
 
     for attempt in range(retries):
         try:
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=200,
-                temperature=0.3
-            )
-            return response.choices[0].message.content.strip()
-
+            text, _ = adapter.complete(prompt, max_tokens=200, temperature=0.3)
+            return text
         except Exception as e:
             error = str(e)
             if "rate_limit" in error.lower() or "429" in error:
                 wait = (attempt + 1) * 15
-                print(f"   ⏳ Rate limited — waiting {wait}s...")
+                print(f"   Rate limited — waiting {wait}s...")
                 time.sleep(wait)
             else:
-                print(f"   ⚠️  Error: {error}")
+                print(f"   Warning: {error}")
                 return f"Wiki summary unavailable for {cls['name']}."
 
     return f"Wiki summary unavailable for {cls['name']}."
@@ -146,15 +138,10 @@ def summarize_method(cls_name: str, cls_wiki: str, method: dict,
         calls=calls_str,
     )
 
+    adapter = model_route("wiki_generation", content_size=len(prompt))
     for attempt in range(retries):
         try:
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=100,
-                temperature=0.3,
-            )
-            summary = response.choices[0].message.content.strip()
+            summary, _ = adapter.complete(prompt, max_tokens=100, temperature=0.3)
             cache[cache_key] = summary
             return summary
         except Exception as e:

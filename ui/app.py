@@ -115,6 +115,7 @@ page = st.sidebar.radio(
         "📊 Token Metrics",
         "⚖️ Live Comparison",
         "📡 API Catalog",
+        "📚 Knowledge Sources",
     ]
 )
 
@@ -470,9 +471,28 @@ elif page == "💬 Ask DeepWiki":
         st.subheader("💡 Answer")
         st.success(resp.get("answer", ""))
 
-        intent = resp.get("intent", "")
+        # ── Metadata row ───────────────────────────────────
+        intent     = resp.get("intent", "")
+        model_used = resp.get("model_used", "")
+        query_id   = resp.get("query_id", "")
+        token_count = resp.get("token_count", 0)
         if intent:
-            st.caption(f"Intent detected: `{intent}` · Tokens: {resp.get('token_count', 0)}")
+            st.caption(
+                f"Intent: `{intent}` · Model: `{model_used}` · Tokens: {token_count}"
+            )
+
+        # ── Thumbs feedback ─────────────────────────────────
+        if query_id:
+            st.markdown("**Was this helpful?**")
+            t1, t2, _ = st.columns([1, 1, 8])
+            if t1.button("👍", key=f"up_{query_id}"):
+                result = safe_post("/feedback", {"query_id": query_id, "thumbs_up": True})
+                if result and result.get("ok"):
+                    st.toast("Thanks! Feedback recorded.")
+            if t2.button("👎", key=f"dn_{query_id}"):
+                result = safe_post("/feedback", {"query_id": query_id, "thumbs_up": False})
+                if result and result.get("ok"):
+                    st.toast("Feedback recorded — we'll improve.")
 
         sources = resp.get("sources", [])
         scores  = resp.get("scores", [])
@@ -942,84 +962,153 @@ while answer quality remains identical.
 
 # ── FLOW TRACER ────────────────────────────────────────────
 elif page == "🔀 Flow Tracer":
-    st.title("🔀 Flow Tracer")
-    st.caption("Trace execution flow from any entry point — backed by real CALLS edges")
+    st.title("🔀 Flow Viewer")
+    st.caption(
+        "End-to-end execution trace — Angular frontend → API Contract → Spring Boot → Database"
+    )
 
+    # ── Layer color + repo label config ────────────────────
+    LAYER_COLOR = {
+        "Angular": "#9b59b6",
+        "API":     "#1abc9c",
+        "HTTP":    "#3498db",
+        "Service": "#2ecc71",
+        "Data":    "#e67e22",
+        "Config":  "#95a5a6",
+        "Code":    "#7f8c8d",
+    }
+    REPO_LABEL = {
+        "frontend": "Angular FE",
+        "backend":  "Spring Boot",
+        "contract": "API Contract",
+        None:       "",
+    }
+
+    # ── Example buttons ─────────────────────────────────────
     EXAMPLES = [
-        "How does pet owner creation work?",
-        "How does owner search work?",
-        "Trace pet creation flow",
-        "How does visit creation work?",
+        "createOwner",
+        "processCreationForm",
+        "getPets",
+        "findOwner",
     ]
-
-    cols = st.columns(2)
+    st.markdown("**Quick examples:**")
+    cols = st.columns(4)
     for i, ex in enumerate(EXAMPLES):
-        if cols[i % 2].button(ex, use_container_width=True, key=f"flow_ex_{i}"):
-            st.session_state["flow_question"] = ex
+        if cols[i].button(ex, use_container_width=True, key=f"flow_ex_{i}"):
+            st.session_state["flow_entry"] = ex
 
     st.divider()
 
-    col1, col2 = st.columns([3, 1])
-    question  = col1.text_input(
-        "Describe the flow you want to trace",
-        value=st.session_state.get("flow_question", ""),
-        placeholder="How does owner creation work?"
+    # ── Input row ───────────────────────────────────────────
+    c1, c2, c3 = st.columns([3, 1, 1])
+    entry    = c1.text_input(
+        "Entry point (class name, method name, or keyword)",
+        value=st.session_state.get("flow_entry", ""),
+        placeholder="createOwner  or  PetService  or  owner creation",
     )
-    max_hops = col2.slider("Max hops", 1, 6, 6)
+    max_hops = c2.slider("Max hops", 2, 10, 8)
+    mode     = c3.selectbox("Mode", ["auto", "cross_repo", "be_only"], index=0)
 
-    if st.button("🔍 Trace Flow", type="primary") and question:
-        # ── Intent classify + entry extract ────────────────
-        with st.spinner("Classifying intent and extracting entry point..."):
-            meta = safe_post("/ask", {"question": question, "top_k": 1}, default={})
+    if st.button("🔍 Trace Flow", type="primary") and entry:
+        payload = {
+            "entry_point": entry,
+            "max_hops":    max_hops,
+        }
 
-        # Use /flow directly for the trace display
-        with st.spinner("Tracing execution flow..."):
-            from api.intent_classifier import extract_entry_point
-            entry = extract_entry_point(question)
-            flow  = safe_post("/flow", {"entry_point": entry, "max_hops": max_hops}, default={})
+        with st.spinner("Tracing end-to-end flow..."):
+            flow = safe_post("/flow", payload, default={})
 
-        steps = flow.get("steps", [])
+        steps      = flow.get("steps", [])
+        trace_mode = flow.get("trace_mode", "none")
 
         if not steps:
-            st.warning(f"No flow found for entry point '{entry}'. "
-                       "CALLS edges are populated after Iteration 14 runs.")
+            st.warning(
+                f"No flow found for **{entry}**.\n\n"
+                "- For cross-repo traces: run Iteration 19 to populate CONSUMES edges\n"
+                "- For BE-only traces: run Iteration 14 to populate CALLS edges"
+            )
         else:
-            st.subheader(f"Flow: {entry}")
-            st.caption(f"Entry point detected: `{entry}`")
+            # ── Path breadcrumb ─────────────────────────────
+            layers_seen = list(dict.fromkeys(s["layer"] for s in steps))
+            breadcrumb  = " → ".join(layers_seen)
+            mode_label  = "🔗 Cross-Repo (FE→BE)" if trace_mode == "cross_repo" else "⚙️ Backend-Only"
+            st.markdown(
+                f"<div style='padding:10px 14px;background:#1e2a38;"
+                f"border-radius:8px;margin-bottom:16px'>"
+                f"<span style='color:#7ec8e3;font-size:0.85rem'>{mode_label}</span>"
+                f"&nbsp;&nbsp;·&nbsp;&nbsp;"
+                f"<span style='color:#b0d4ee;font-weight:500'>{breadcrumb}</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
 
-            LAYER_COLOR = {
-                "HTTP":      "#3498db",
-                "Service":   "#2ecc71",
-                "Data":      "#e67e22",
-                "Component": "#9b59b6",
-                "Code":      "#95a5a6",
-            }
-
+            # ── Step cards ──────────────────────────────────
+            prev_repo_type = None
             for step in steps:
-                color = LAYER_COLOR.get(step["layer"], "#95a5a6")
-                badge = (
+                layer     = step.get("layer", "Code")
+                repo_type = step.get("repo_type")
+                repo_id   = step.get("repo_id") or ""
+                color     = LAYER_COLOR.get(layer, "#7f8c8d")
+
+                # Repo boundary separator
+                if repo_type != prev_repo_type and prev_repo_type is not None:
+                    repo_lbl = REPO_LABEL.get(repo_type, repo_type or "")
+                    st.markdown(
+                        f"<div style='text-align:center;margin:4px 0;"
+                        f"color:#507898;font-size:0.8rem'>▼ {repo_lbl}</div>",
+                        unsafe_allow_html=True,
+                    )
+                prev_repo_type = repo_type
+
+                layer_badge = (
                     f"<span style='background:{color};color:white;"
-                    f"padding:2px 8px;border-radius:4px;font-size:0.8em'>"
-                    f"{step['layer']}</span>"
+                    f"padding:2px 8px;border-radius:4px;font-size:0.78em;"
+                    f"font-weight:bold'>{layer}</span>"
                 )
+                repo_badge = (
+                    f"<span style='background:#1a3a5c;color:#7ec8e3;"
+                    f"padding:2px 7px;border-radius:10px;font-size:0.72em;"
+                    f"margin-left:6px'>{repo_id}</span>"
+                    if repo_id else ""
+                )
+
                 with st.container():
                     st.markdown(
-                        f"{badge} **Step {step['step']}: "
+                        f"{layer_badge}{repo_badge} "
+                        f"**Step {step['step']}: "
                         f"`{step['class_name']}.{step['method_name']}()`**",
                         unsafe_allow_html=True,
                     )
                     logic = step.get("logic_summary", "")
-                    st.caption(logic if logic else "_No logic summary yet — run Iteration 14_")
+                    if logic:
+                        st.caption(logic)
+                    else:
+                        st.caption("_No logic summary yet — run Iterations 14–16 to populate_")
                     st.divider()
 
+            # ── LLM Explanation ─────────────────────────────
             st.subheader("💬 Explanation")
-            st.success(flow.get("explanation", ""))
+            explanation = flow.get("explanation", "")
+            if explanation:
+                st.success(explanation)
 
-            token_count = flow.get("token_count", 0)
-            st.caption(f"Context tokens used: **{token_count}** (ceiling: 600)")
+            # ── Token metrics ────────────────────────────────
+            token_count  = flow.get("token_count", 0)
+            raw_estimate = flow.get("raw_token_estimate", 0)
+
+            st.subheader("📊 Token Usage")
+            mcol1, mcol2, mcol3 = st.columns(3)
+            mcol1.metric("DeepWiki tokens", f"{token_count:,}", help="Tokens used for this answer")
+            mcol2.metric("Raw approach", f"{raw_estimate:,}", help="Estimated tokens to load all source files")
+            if raw_estimate > 0:
+                savings_pct = round((1 - token_count / raw_estimate) * 100)
+                mcol3.metric("Savings", f"{savings_pct}%", delta=f"-{raw_estimate - token_count:,} tokens")
+
             if token_count > 0:
-                pct = min(token_count / 600, 1.0)
-                st.progress(pct, text=f"{token_count} / 600 tokens")
+                st.progress(
+                    min(token_count / 600, 1.0),
+                    text=f"Context budget: {token_count} / 600 tokens used"
+                )
 
 
 # ── API CATALOG ────────────────────────────────────────────
@@ -1048,8 +1137,9 @@ elif page == "📡 API Catalog":
         }
 
         for c in contracts:
-            method = c.get("http_method", "")
-            color  = METHOD_COLORS.get(method, "#95a5a6")
+            method      = c.get("http_method", "")
+            color       = METHOD_COLORS.get(method, "#95a5a6")
+            contract_id = c.get("id", "")
             with st.container():
                 col1, col2, col3, col4 = st.columns([1, 3, 2, 2])
                 col1.markdown(
@@ -1061,6 +1151,29 @@ elif page == "📡 API Catalog":
                 col2.code(c.get("path", ""), language=None)
                 col3.caption(c.get("controller_class", ""))
                 col4.caption(c.get("controller_method", ""))
+
+            # ── Consumed-by badge (Iteration 19) ────────────
+            if contract_id:
+                consumers_data = safe_get(
+                    f"/contracts/{contract_id}/consumers",
+                    default={"consumers": [], "count": 0}
+                )
+                consumers = (consumers_data or {}).get("consumers", [])
+                if consumers:
+                    badges = " ".join(
+                        f"<span style='background:#1a3a5c;color:#7ec8e3;"
+                        f"padding:1px 7px;border-radius:10px;font-size:0.72rem;"
+                        f"margin-right:4px'>"
+                        f"{con['caller_class']}.{con['caller_method']}() "
+                        f"[{int(con.get('confidence', 0) * 100)}%]</span>"
+                        for con in consumers
+                    )
+                    st.markdown(
+                        f"<div style='margin:-4px 0 8px 0;padding-left:4px'>"
+                        f"<span style='color:#507898;font-size:0.75rem'>Consumed by:</span> "
+                        f"{badges}</div>",
+                        unsafe_allow_html=True,
+                    )
 
         st.divider()
 
@@ -1112,3 +1225,128 @@ elif page == "📡 API Catalog":
         st.dataframe(df_c, use_container_width=True, hide_index=True)
     else:
         st.info("No consumed endpoints yet. Angular analysis (Iteration 18) will populate this.")
+# ── KNOWLEDGE SOURCES ──────────────────────────────────────
+elif page == "📚 Knowledge Sources":
+    st.title("📚 Knowledge Sources — Confluence Integration")
+    st.caption("Submit Confluence pages to ground DeepWiki answers in design decisions and meeting notes.")
+
+    # ── Submit form ────────────────────────────────────────
+    with st.expander("Submit a Confluence page", expanded=True):
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            conf_url = st.text_input(
+                "Confluence page URL or ID",
+                placeholder="https://your-org.atlassian.net/wiki/spaces/ENG/pages/123456/Auth+Design",
+            )
+        with col2:
+            conf_category = st.selectbox(
+                "Category",
+                ["current", "historical", "upcoming", "update"],
+                help="current = active design; historical = past decisions; upcoming = planned; update = changelog",
+            )
+
+        module_input = st.text_input(
+            "Module tags (comma-separated)",
+            placeholder="owner-module, auth-module",
+            help="Module IDs this page documents — used for alignment scoring",
+        )
+        module_tags = [t.strip() for t in module_input.split(",") if t.strip()]
+
+        suite_id_input = st.text_input("Suite ID (optional)", value=selected_suite_id)
+
+        if st.button("Ingest page", type="primary", disabled=not conf_url):
+            with st.spinner("Fetching, classifying, embedding..."):
+                result = safe_post("/confluence/ingest", {
+                    "url":         conf_url,
+                    "category":    conf_category,
+                    "module_tags": module_tags,
+                    "suite_id":    suite_id_input,
+                })
+            if result and result.get("ok"):
+                r = result["result"]
+                st.success(f"Ingested: **{r.get('title', '?')}**")
+                cols = st.columns(3)
+                cols[0].metric("Content type", r.get("content_type", "?"))
+                cols[1].metric("Collection",   r.get("collection") or "vault (not stored)")
+                cols[2].metric("Flags raised",  len(r.get("flags", [])))
+                if r.get("alignment"):
+                    st.markdown("**Alignment scores:**")
+                    for mod, score in r["alignment"].items():
+                        colour = "normal" if score >= 0 else "inverse"
+                        st.metric(mod, f"{score:+.3f}", delta_color=colour)
+                if r.get("flags"):
+                    st.warning(f"ContradictionFlags raised: {r['flags']}")
+
+    st.divider()
+
+    # ── Ingested pages table ────────────────────────────────
+    st.subheader("Ingested pages")
+    pages_data = safe_get("/confluence/pages", default={"pages": [], "count": 0})
+    pages_list = pages_data.get("pages", []) if pages_data else []
+
+    if pages_list:
+        st.caption(f"{pages_data.get('count', 0)} page(s) in knowledge graph")
+        for p in pages_list:
+            badge = {
+                "meeting_notes": "Meeting Notes",
+                "api_docs":      "API Docs",
+                "architecture":  "Architecture",
+                "user_flows":    "User Flows",
+                "general":       "General",
+                "server_db":     "Vault Only",
+            }.get(p.get("content_type", ""), p.get("content_type", "?"))
+
+            with st.container(border=True):
+                c1, c2, c3 = st.columns([4, 1, 1])
+                with c1:
+                    url = p.get("page_url", "")
+                    title = p.get("title", "Untitled")
+                    if url:
+                        st.markdown(f"**[{title}]({url})**")
+                    else:
+                        st.markdown(f"**{title}**")
+                    if p.get("modules"):
+                        for m in p["modules"]:
+                            score = m.get("score", 0) or 0
+                            colour = ":green[+]" if score >= 0 else ":red[-]"
+                            st.caption(f"Module: {m.get('module_id', '?')}  alignment {colour}{abs(score):.3f}")
+                with c2:
+                    st.caption(badge)
+                    st.caption(p.get("category", ""))
+                with c3:
+                    st.caption(f"ID: {p.get('page_id', '?')}")
+    else:
+        st.info("No Confluence pages ingested yet. Submit one above.")
+
+    st.divider()
+
+    # ── Contradiction flags ─────────────────────────────────
+    st.subheader("Contradiction Flags")
+    flags_data = safe_get("/confluence/flags", default={"flags": [], "count": 0})
+    flags_list = flags_data.get("flags", []) if flags_data else []
+
+    if flags_list:
+        st.warning(f"{len(flags_list)} unresolved contradiction(s) detected.")
+        for f in flags_list:
+            with st.container(border=True):
+                c1, c2, c3 = st.columns([3, 1, 1])
+                with c1:
+                    url = f.get("page_url", "")
+                    title = f.get("page_title", f.get("page_id", "?"))
+                    if url:
+                        st.markdown(f"[{title}]({url})")
+                    else:
+                        st.markdown(title)
+                    st.caption(f"Module: {f.get('module_id', '?')}  |  alignment: {f.get('alignment_score', 0):.3f}")
+                with c2:
+                    severity = f.get("severity", "MEDIUM")
+                    if severity == "HIGH":
+                        st.error(severity)
+                    else:
+                        st.warning(severity)
+                with c3:
+                    if st.button("Resolve", key=f"resolve_{f['flag_id']}"):
+                        safe_post(f"/confluence/flags/{f['flag_id']}/resolve", {})
+                        st.rerun()
+    else:
+        st.success("No open contradiction flags.")

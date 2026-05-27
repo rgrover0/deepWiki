@@ -39,6 +39,16 @@ services:
       - "8082:8082"
     restart: unless-stopped
 
+  mcp-server:
+    build: ./mcp-server
+    container_name: deepwiki-mcp
+    ports:
+      - "8090:8090"
+    environment:
+      DEEPWIKI_API_URL: http://deepwiki-api:8000
+      PORT: "8090"
+    restart: unless-stopped
+
 volumes:
   neo4j_data:
   qdrant_data:

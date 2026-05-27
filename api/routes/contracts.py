@@ -37,8 +37,32 @@ def get_consumers(repo_id: str = "spring-petclinic"):
                    a.path              AS path,
                    a.controller_class  AS controller_class,
                    c.confidence        AS confidence,
-                   c.caller_class      AS caller_class
+                   c.caller_class      AS caller_class,
+                   c.caller_method     AS caller_method
             ORDER BY a.path
         """, repo_id=repo_id).data()
     driver.close()
     return {"repo_id": repo_id, "consumed": rows, "count": len(rows)}
+
+
+@router.get("/{contract_id:path}/consumers")
+def get_contract_consumers(contract_id: str):
+    """All FE repos and caller classes that CONSUME a specific APIContract."""
+    driver = get_driver()
+    with driver.session() as session:
+        rows = session.run("""
+            MATCH (r:Repository)-[c:CONSUMES]->(a:APIContract {id: $contract_id})
+            RETURN r.id              AS repo_id,
+                   r.name            AS repo_name,
+                   c.caller_class    AS caller_class,
+                   c.caller_method   AS caller_method,
+                   c.confidence      AS confidence,
+                   c.normalized_url  AS normalized_url
+            ORDER BY c.confidence DESC, r.id
+        """, contract_id=contract_id).data()
+    driver.close()
+    return {
+        "contract_id": contract_id,
+        "consumers":   rows,
+        "count":       len(rows),
+    }

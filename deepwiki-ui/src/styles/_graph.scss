@@ -1,0 +1,52 @@
+// D3 Graph dark theme — scoped to .graph-mode
+// Applied only on the /graph route
+
+// Graph color tokens (also in tailwind.config.js as graph-* colors)
+$graph-bg:        #020C18;
+$graph-panel:     #030E1C;
+$graph-border:    #0D3464;
+$graph-border-hi: #1A6CC0;
+$graph-text:      #507898;
+$graph-text-hi:   #B0D4EE;
+$graph-yellow:    #FFD100;
+$graph-blue:      #2878CC;
+$graph-teal:      #1D9E75;
+$graph-purple:    #8870DD;
+
+.graph-mode {
+  background: $graph-bg;
+  color: $graph-text-hi;
+  font-family: 'Courier New', monospace;
+
+  // D3 SVG elements
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .graph-node circle {
+    cursor: pointer;
+    transition: opacity 0.2s;
+
+    &:hover { opacity: 0.85; }
+  }
+
+  .graph-node text {
+    fill: $graph-text-hi;
+    font-size: 11px;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .graph-link {
+    stroke: $graph-border;
+    stroke-opacity: 0.6;
+    stroke-width: 1px;
+  }
+
+  .graph-link--suite {
+    stroke: $graph-border-hi;
+    stroke-dasharray: 4 3;
+  }
+}

@@ -3,12 +3,21 @@
     {
       "id": "pet-management-platform",
       "name": "Pet Management Platform",
-      "description": "Spring Boot backend for managing pets, owners, vets and clinic visits",
+      "description": "Spring Boot backend + Angular frontend for managing pets, owners, vets and clinic visits",
       "repos": [
         {
           "id": "spring-petclinic",
           "name": "Spring PetClinic",
-          "language": "java"
+          "language": "java",
+          "framework": "spring-boot",
+          "role": "backend"
+        },
+        {
+          "id": "angular-petclinic",
+          "name": "Angular PetClinic UI",
+          "language": "typescript",
+          "framework": "angular",
+          "role": "frontend"
         }
       ]
     }
