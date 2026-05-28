@@ -2,25 +2,24 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ProjectService } from '../../core/services/project.service';
 import { Suite } from '../../core/models';
-import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { SuiteGroupComponent } from './components/suite-group/suite-group.component';
 
 @Component({
   selector: 'dw-projects',
   standalone: true,
-  imports: [BadgeComponent, SuiteGroupComponent],
+  imports: [SuiteGroupComponent],
   template: `
     <div class="container mx-auto px-4 py-10 space-y-8">
 
       <!-- Hero -->
       <div class="space-y-2">
-        <h1 class="text-4xl font-bold tracking-tight">Project Component</h1>
+        <h1 class="text-4xl font-bold tracking-tight">Project Portfolio</h1>
         <p class="text-muted-foreground text-lg">
           @if (loading()) {
             Loading projects...
           } @else {
-            {{ totalProjects() }} project{{ totalProjects() !== 1 ? 's' : '' }}
-            across {{ suites().length }} application suite{{ suites().length !== 1 ? 's' : '' }}
+            Explore our technology ecosystem across {{ totalProjects() }} project{{ totalProjects() !== 1 ? 's' : '' }}
+            in {{ suites().length }} application suite{{ suites().length !== 1 ? 's' : '' }}
           }
         </p>
       </div>

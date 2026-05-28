@@ -29,6 +29,10 @@ import { LucideAngularModule } from 'lucide-angular';
              class="text-sm font-medium flex items-center gap-2 hover:text-penske-yellow transition-colors">
             <lucide-icon name="share-2" class="h-4 w-4" /> Architecture
           </a>
+          <a routerLink="/admin" routerLinkActive="text-penske-yellow"
+             class="text-sm font-medium flex items-center gap-2 hover:text-penske-yellow transition-colors">
+            <lucide-icon name="settings" class="h-4 w-4" /> Admin
+          </a>
         </nav>
 
         <div class="ml-auto relative w-64">

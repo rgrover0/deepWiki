@@ -21,6 +21,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/search/search.component').then(m => m.SearchComponent),
       },
+      {
+        path: 'admin',
+        loadComponent: () =>
+          import('./features/admin/admin.component').then(m => m.AdminComponent),
+      },
     ],
   },
   {

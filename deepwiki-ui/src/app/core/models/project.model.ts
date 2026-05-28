@@ -36,4 +36,7 @@ export interface Project {
   apis: ApiContract[];
   status?: 'active' | 'beta' | 'deprecated';
   lastDeploy?: string;
+  repositoryUrl?: string;
+  confluenceLink?: string;
+  architectureDiagram?: string;
 }

@@ -31,7 +31,7 @@ import { Project, Message } from '../../../../core/models';
             <div [class]="msg.role === 'user'
               ? 'max-w-md bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-2 text-sm'
               : 'max-w-md bg-muted rounded-2xl rounded-tl-sm px-4 py-2 text-sm'">
-              {{ msg.content }}
+              <p class="whitespace-pre-wrap">{{ msg.content }}</p>
             </div>
           </div>
         }
@@ -73,9 +73,10 @@ export class AskDeepwikiSectionComponent {
   suggestedQuestions = computed(() => {
     const p = this.project();
     return [
-      `What are the main modules in ${p.name}?`,
-      `How does ${p.name} handle data persistence?`,
-      `Which classes handle REST endpoints in ${p.name}?`,
+      `What authentication methods does ${p.name} support?`,
+      `How does ${p.name} handle error scenarios?`,
+      `What are the main dependencies of ${p.name}?`,
+      `Explain the ${p.modules[0]?.name ?? 'main'} module`,
     ];
   });
 
