@@ -85,5 +85,10 @@ def bootstrap_suites():
     """Write all suites from config/suites.json into Neo4j."""
     from pipeline.graph.suite_writer import write_suite_config
     driver = get_driver()
-    counts = write_suite_config(driver)
-    return {"status": "ok", **counts}
+    try:
+        counts = write_suite_config(driver)
+        return {"status": "ok", **counts}
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"suite bootstrap failed: {exc}")
