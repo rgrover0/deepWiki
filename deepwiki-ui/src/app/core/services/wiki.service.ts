@@ -48,4 +48,8 @@ export class WikiService {
   getContracts(repoId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/contracts?repo_id=${repoId}`);
   }
+
+  getConsumers(repoId: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/contracts/consumers?repo_id=${repoId}`);
+  }
 }

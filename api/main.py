@@ -23,6 +23,7 @@ from api.routes import contracts
 from api.routes import flow
 from api.routes import suite
 from api.routes import confluence
+from api.routes import project
 from api import feedback
 
 app.include_router(classes.router,   prefix="/classes",   tags=["Classes"])
@@ -33,6 +34,7 @@ app.include_router(compare.router,   prefix="/compare",   tags=["Compare"])
 app.include_router(contracts.router, prefix="/contracts", tags=["Contracts"])
 app.include_router(flow.router,      prefix="/flow",      tags=["Flow"])
 app.include_router(suite.router,     prefix="/suite",     tags=["Suite"])
+app.include_router(project.router,   prefix="/project",   tags=["Project"])
 app.include_router(feedback.router,    prefix="/feedback",    tags=["Feedback"])
 app.include_router(confluence.router,  prefix="/confluence",  tags=["Confluence"])
 

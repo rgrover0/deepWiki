@@ -1,30 +1,32 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
-import { Project } from '../../core/models';
+import { Project, Suite } from '../../core/models';
 import { LucideAngularModule } from 'lucide-angular';
+import { ProjectService } from '../../core/services/project.service';
 import { MOCK_SUITES } from '../../core/services/mock-data';
 
 interface ProjectForm {
   name: string;
   suite: string;
   newSuite: string;
+  newSuiteDesc: string;
   techStack: string[];
   description: string;
   story: string;
   repositoryUrl: string;
   confluenceLink: string;
   architectureDiagram: string;
+  diagramMode: 'upload' | 'url';
+  diagramUrl: string;
+  status: string;
 }
 
-interface Toast {
-  type: 'success' | 'error';
-  message: string;
-}
+interface Toast { type: 'success' | 'error'; message: string; }
 
 const EMPTY_FORM = (): ProjectForm => ({
-  name: '', suite: '', newSuite: '', techStack: [],
-  description: '', story: '',
-  repositoryUrl: '', confluenceLink: '', architectureDiagram: '',
+  name: '', suite: '', newSuite: '', newSuiteDesc: '', techStack: [],
+  description: '', story: '', repositoryUrl: '', confluenceLink: '',
+  architectureDiagram: '', diagramMode: 'upload', diagramUrl: '', status: 'active',
 });
 
 @Component({
@@ -32,41 +34,31 @@ const EMPTY_FORM = (): ProjectForm => ({
   standalone: true,
   imports: [LucideAngularModule],
   styles: [`
-    .tab-trigger {
-      @apply py-2 text-sm font-medium rounded-md transition-colors;
-    }
-    .tab-trigger.active {
-      @apply bg-background text-foreground shadow-sm;
-    }
-    .tab-trigger:not(.active) {
-      @apply text-muted-foreground hover:text-foreground;
-    }
-    .field-label {
-      @apply block text-sm font-medium mb-1.5;
-    }
+    .tab-trigger { @apply py-2 text-sm font-medium rounded-md transition-colors; }
+    .tab-trigger.active { @apply bg-background text-foreground shadow-sm; }
+    .tab-trigger:not(.active) { @apply text-muted-foreground hover:text-foreground; }
+    .field-label { @apply block text-sm font-medium mb-1.5; }
     .field-input {
-      @apply w-full h-10 rounded-lg border border bg-muted/40 px-3 text-sm
+      @apply w-full h-10 rounded-lg border bg-muted/40 px-3 text-sm
              placeholder:text-muted-foreground focus:outline-none focus:ring-2
              focus:ring-primary focus:bg-background transition-colors;
     }
     .field-textarea {
-      @apply w-full rounded-lg border border bg-muted/40 px-3 py-2 text-sm
+      @apply w-full rounded-lg border bg-muted/40 px-3 py-2 text-sm
              placeholder:text-muted-foreground focus:outline-none focus:ring-2
              focus:ring-primary focus:bg-background transition-colors resize-none;
     }
-    .section-title {
-      @apply font-semibold text-base flex items-center gap-2 mb-4;
-    }
+    .section-title { @apply font-semibold text-base flex items-center gap-2 mb-4; }
     .btn-primary {
       @apply flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-primary-foreground
              text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50;
     }
     .btn-outline {
-      @apply flex items-center gap-2 h-10 px-4 rounded-lg border border bg-background
+      @apply flex items-center gap-2 h-10 px-4 rounded-lg border bg-background
              text-sm font-medium hover:bg-muted transition-colors;
     }
     .btn-icon {
-      @apply h-10 w-10 rounded-lg border border bg-background flex items-center
+      @apply h-10 w-10 rounded-lg border bg-background flex items-center
              justify-center hover:bg-muted transition-colors flex-shrink-0;
     }
     .step-num {
@@ -102,7 +94,7 @@ const EMPTY_FORM = (): ProjectForm => ({
         </div>
       }
 
-      <!-- ── Segmented tab bar ── -->
+      <!-- Segmented tab bar -->
       <div class="grid grid-cols-3 gap-1 rounded-lg border bg-muted p-1">
         <button (click)="tab.set('add-project')"
           [class]="'tab-trigger ' + (tab() === 'add-project' ? 'active' : '')">
@@ -118,14 +110,13 @@ const EMPTY_FORM = (): ProjectForm => ({
         </button>
       </div>
 
-      <!-- ════════════════════════════ ADD PROJECT ════════════════════════════ -->
+      <!-- ══════════════ ADD PROJECT ══════════════ -->
       @if (tab() === 'add-project') {
         <div class="grid gap-6 md:grid-cols-3">
 
-          <!-- ── Main form card ── -->
+          <!-- Main form card -->
           <div class="md:col-span-2 rounded-xl border bg-card p-6 space-y-6">
 
-            <!-- Card header -->
             <div>
               <h2 class="font-semibold text-lg flex items-center gap-2">
                 <lucide-icon name="plus" class="h-5 w-5"></lucide-icon>
@@ -138,7 +129,7 @@ const EMPTY_FORM = (): ProjectForm => ({
 
             <hr class="border-border" />
 
-            <!-- §1 Basic Information -->
+            <!-- §1 Basic Info -->
             <div>
               <h3 class="section-title">
                 <lucide-icon name="file-text" class="h-4 w-4 text-primary"></lucide-icon>
@@ -146,7 +137,6 @@ const EMPTY_FORM = (): ProjectForm => ({
               </h3>
 
               <div class="grid gap-4 md:grid-cols-2 mb-4">
-                <!-- Project name -->
                 <div>
                   <label class="field-label">Project Name *</label>
                   <input type="text"
@@ -155,19 +145,16 @@ const EMPTY_FORM = (): ProjectForm => ({
                     placeholder="e.g., Authentication Service"
                     class="field-input" />
                 </div>
-                <!-- Application Suite -->
                 <div>
                   <label class="field-label">Application Suite *</label>
                   @if (!newSuiteMode()) {
                     <div class="flex gap-2">
                       <div class="relative flex-1">
-                        <select
-                          [value]="form.suite"
-                          (change)="form.suite = val($event)"
+                        <select [value]="form.suite" (change)="form.suite = val($event)"
                           class="field-input appearance-none pr-8 cursor-pointer">
                           <option value="">Select a suite</option>
-                          @for (s of suiteNames; track s) {
-                            <option [value]="s">{{ s }}</option>
+                          @for (s of suites(); track s.id) {
+                            <option [value]="s.id">{{ s.name }}</option>
                           }
                         </select>
                         <lucide-icon name="chevron-down"
@@ -179,40 +166,48 @@ const EMPTY_FORM = (): ProjectForm => ({
                       </button>
                     </div>
                   } @else {
-                    <div class="flex gap-2">
-                      <input type="text"
-                        [value]="form.newSuite"
-                        (input)="form.newSuite = val($event)"
-                        placeholder="New suite name"
-                        class="field-input flex-1" />
-                      <button (click)="newSuiteMode.set(false)"
-                        class="h-10 px-3 rounded-lg border border text-sm hover:bg-muted transition-colors flex-shrink-0">
-                        Cancel
-                      </button>
+                    <div class="space-y-2">
+                      <input type="text" [value]="form.newSuite" (input)="form.newSuite = val($event)"
+                        placeholder="New suite name" class="field-input" />
+                      <div class="flex gap-2">
+                        <input type="text" [value]="form.newSuiteDesc" (input)="form.newSuiteDesc = val($event)"
+                          placeholder="Suite description (optional)" class="field-input flex-1" />
+                        <button (click)="newSuiteMode.set(false)"
+                          class="h-10 px-3 rounded-lg border text-sm hover:bg-muted transition-colors flex-shrink-0">
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   }
                 </div>
               </div>
 
-              <!-- Description -->
+              <div class="mb-4">
+                <label class="field-label">Status</label>
+                <div class="relative">
+                  <select [value]="form.status" (change)="form.status = val($event)"
+                    class="field-input appearance-none pr-8 cursor-pointer">
+                    <option value="active">Active</option>
+                    <option value="beta">Beta</option>
+                    <option value="deprecated">Deprecated</option>
+                  </select>
+                  <lucide-icon name="chevron-down"
+                    class="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none">
+                  </lucide-icon>
+                </div>
+              </div>
+
               <div class="mb-4">
                 <label class="field-label">Description *</label>
-                <textarea
-                  [value]="form.description"
-                  (input)="form.description = val($event)"
-                  placeholder="Brief description of the project..."
-                  rows="3"
+                <textarea [value]="form.description" (input)="form.description = val($event)"
+                  placeholder="Brief description of the project..." rows="3"
                   class="field-textarea"></textarea>
               </div>
 
-              <!-- Story -->
               <div>
                 <label class="field-label">Project Story &amp; History</label>
-                <textarea
-                  [value]="form.story"
-                  (input)="form.story = val($event)"
-                  placeholder="Tell the story behind this project, when it was built, why, and how it evolved..."
-                  rows="4"
+                <textarea [value]="form.story" (input)="form.story = val($event)"
+                  placeholder="Tell the story behind this project..." rows="4"
                   class="field-textarea"></textarea>
               </div>
             </div>
@@ -225,8 +220,6 @@ const EMPTY_FORM = (): ProjectForm => ({
                 <lucide-icon name="git-branch" class="h-4 w-4 text-primary"></lucide-icon>
                 Tech Stack
               </h3>
-
-              <label class="field-label">Technologies Used</label>
               <div class="flex gap-2">
                 <input type="text" #techInput
                   (keydown.enter)="addTech(techInput)"
@@ -254,44 +247,31 @@ const EMPTY_FORM = (): ProjectForm => ({
 
             <hr class="border-border" />
 
-            <!-- §3 Repository & Documentation -->
+            <!-- §3 Repository & Docs -->
             <div>
               <h3 class="section-title">
                 <lucide-icon name="link" class="h-4 w-4 text-primary"></lucide-icon>
                 Repository &amp; Documentation
               </h3>
-
-              <!-- Repository URL -->
               <div class="mb-4">
                 <label class="field-label">Repository URL</label>
                 <div class="flex gap-2">
-                  <input type="url"
-                    [value]="form.repositoryUrl"
-                    (input)="form.repositoryUrl = val($event)"
-                    placeholder="https://github.com/org/repo"
-                    class="field-input flex-1" />
+                  <input type="url" [value]="form.repositoryUrl" (input)="form.repositoryUrl = val($event)"
+                    placeholder="https://github.com/org/repo" class="field-input flex-1" />
                   <button class="btn-icon">
                     <lucide-icon name="link" class="h-4 w-4 text-muted-foreground"></lucide-icon>
                   </button>
                 </div>
               </div>
-
-              <!-- Confluence URL -->
               <div>
                 <label class="field-label">Confluence Page Link</label>
                 <div class="flex gap-2">
-                  <input type="url"
-                    [value]="form.confluenceLink"
-                    (input)="form.confluenceLink = val($event)"
-                    placeholder="https://confluence.company.com/pages/..."
-                    class="field-input flex-1" />
+                  <input type="url" [value]="form.confluenceLink" (input)="form.confluenceLink = val($event)"
+                    placeholder="https://confluence.company.com/pages/..." class="field-input flex-1" />
                   <button class="btn-icon">
                     <lucide-icon name="file-text" class="h-4 w-4 text-muted-foreground"></lucide-icon>
                   </button>
                 </div>
-                <p class="text-xs text-muted-foreground mt-1.5">
-                  Link to Confluence documentation for this project
-                </p>
               </div>
             </div>
 
@@ -304,40 +284,68 @@ const EMPTY_FORM = (): ProjectForm => ({
                 Architecture Diagram
               </h3>
 
-              <div class="border-2 border-dashed border-border rounded-xl p-8 text-center">
-                @if (!selectedFile()) {
-                  <div class="space-y-3">
-                    <lucide-icon name="upload" class="h-12 w-12 text-muted-foreground mx-auto"></lucide-icon>
-                    <div>
-                      <p class="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                      <p class="text-xs text-muted-foreground mt-0.5">PNG, JPG, SVG up to 10MB</p>
-                    </div>
-                    <label class="btn-outline cursor-pointer inline-flex mx-auto">
-                      <lucide-icon name="upload" class="h-4 w-4"></lucide-icon>
-                      Select File
-                      <input type="file" accept="image/*" class="hidden" (change)="onFile($event)" />
-                    </label>
-                  </div>
-                } @else {
-                  <div class="space-y-3">
-                    <div class="flex items-center justify-center gap-2 text-sm">
-                      <lucide-icon name="image" class="h-4 w-4 text-green-600"></lucide-icon>
-                      <span class="font-medium">{{ selectedFile()!.name }}</span>
-                    </div>
-                    @if (form.architectureDiagram) {
-                      <img [src]="form.architectureDiagram" alt="Architecture preview"
-                        class="max-h-64 mx-auto rounded-lg border shadow-sm" />
-                    }
-                    <button (click)="removeFile()"
-                      class="btn-outline mx-auto inline-flex text-xs px-3 h-8">
-                      <lucide-icon name="trash-2" class="h-3 w-3"></lucide-icon>
-                      Remove
-                    </button>
-                  </div>
-                }
+              <!-- Toggle upload / URL -->
+              <div class="flex gap-1 rounded-lg border bg-muted p-1 mb-4 w-fit">
+                <button (click)="form.diagramMode = 'upload'"
+                  [class]="'px-3 py-1.5 text-xs font-medium rounded-md transition-colors '
+                    + (form.diagramMode === 'upload' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground')">
+                  Upload File
+                </button>
+                <button (click)="form.diagramMode = 'url'"
+                  [class]="'px-3 py-1.5 text-xs font-medium rounded-md transition-colors '
+                    + (form.diagramMode === 'url' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground')">
+                  Enter URL
+                </button>
               </div>
+
+              @if (form.diagramMode === 'upload') {
+                <div class="border-2 border-dashed border-border rounded-xl p-8 text-center">
+                  @if (!selectedFile()) {
+                    <div class="space-y-3">
+                      <lucide-icon name="upload" class="h-12 w-12 text-muted-foreground mx-auto"></lucide-icon>
+                      <div>
+                        <p class="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                        <p class="text-xs text-muted-foreground mt-0.5">PNG, JPG, SVG up to 10MB</p>
+                      </div>
+                      <label class="btn-outline cursor-pointer inline-flex mx-auto">
+                        <lucide-icon name="upload" class="h-4 w-4"></lucide-icon>
+                        Select File
+                        <input type="file" accept="image/*" class="hidden" (change)="onFile($event)" />
+                      </label>
+                    </div>
+                  } @else {
+                    <div class="space-y-3">
+                      <div class="flex items-center justify-center gap-2 text-sm">
+                        <lucide-icon name="image" class="h-4 w-4 text-green-600"></lucide-icon>
+                        <span class="font-medium">{{ selectedFile()!.name }}</span>
+                      </div>
+                      @if (form.architectureDiagram) {
+                        <img [src]="form.architectureDiagram" alt="Architecture preview"
+                          class="max-h-64 mx-auto rounded-lg border shadow-sm" />
+                      }
+                      <button (click)="removeFile()"
+                        class="btn-outline mx-auto inline-flex text-xs px-3 h-8">
+                        <lucide-icon name="trash-2" class="h-3 w-3"></lucide-icon>
+                        Remove
+                      </button>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="space-y-2">
+                  <input type="url" [value]="form.diagramUrl" (input)="form.diagramUrl = val($event)"
+                    placeholder="https://example.com/architecture.png"
+                    class="field-input" />
+                  @if (form.diagramUrl) {
+                    <img [src]="form.diagramUrl" alt="Diagram preview"
+                      class="max-h-64 rounded-lg border shadow-sm mt-2"
+                      (error)="form.diagramUrl = ''" />
+                  }
+                </div>
+              }
+
               <p class="text-xs text-muted-foreground mt-2">
-                Upload an architecture diagram to help visualize the project structure
+                Upload or link an architecture diagram to help visualize the project structure
               </p>
             </div>
 
@@ -346,17 +354,20 @@ const EMPTY_FORM = (): ProjectForm => ({
             <!-- Submit row -->
             <div class="flex justify-end gap-3">
               <button (click)="resetForm()" class="btn-outline">Reset</button>
-              <button (click)="submit()" class="btn-primary">
-                <lucide-icon name="save" class="h-4 w-4"></lucide-icon>
-                Add Project
+              <button (click)="submit()" [disabled]="saving()" class="btn-primary">
+                @if (saving()) {
+                  <lucide-icon name="loader-circle" class="h-4 w-4 animate-spin"></lucide-icon>
+                  Saving...
+                } @else {
+                  <lucide-icon name="save" class="h-4 w-4"></lucide-icon>
+                  Add Project
+                }
               </button>
             </div>
           </div>
 
-          <!-- ── Sidebar ── -->
+          <!-- Sidebar -->
           <div class="space-y-4">
-
-            <!-- Info alert -->
             <div class="flex gap-3 rounded-xl border bg-muted/50 p-4">
               <lucide-icon name="info" class="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5"></lucide-icon>
               <p class="text-sm text-muted-foreground leading-relaxed">
@@ -364,8 +375,6 @@ const EMPTY_FORM = (): ProjectForm => ({
                 update documentation links, and upload architecture diagrams.
               </p>
             </div>
-
-            <!-- Quick Start Guide card -->
             <div class="rounded-xl border bg-card p-6 space-y-4">
               <div>
                 <h3 class="font-semibold text-base">Quick Start Guide</h3>
@@ -396,8 +405,8 @@ const EMPTY_FORM = (): ProjectForm => ({
                 <li class="flex items-start gap-3">
                   <div class="step-num">4</div>
                   <div>
-                    <p class="text-sm font-medium">Upload architecture diagram</p>
-                    <p class="text-xs text-muted-foreground mt-0.5">Visual diagrams help team members understand the system quickly</p>
+                    <p class="text-sm font-medium">Attach architecture diagram</p>
+                    <p class="text-xs text-muted-foreground mt-0.5">Upload a file or paste an image URL</p>
                   </div>
                 </li>
                 <li class="flex items-start gap-3">
@@ -411,16 +420,14 @@ const EMPTY_FORM = (): ProjectForm => ({
                 </li>
               </ul>
             </div>
-
-            <!-- Tip card -->
             <div class="rounded-xl border border-accent/40 bg-accent/5 p-5">
               <div class="flex gap-3">
                 <lucide-icon name="info" class="h-5 w-5 text-accent flex-shrink-0 mt-0.5"></lucide-icon>
                 <div>
                   <p class="text-sm font-semibold">Creating a new suite</p>
                   <p class="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Click the + button next to the suite selector to create a new application suite
-                    category. This is useful when onboarding a completely new product line or business unit.
+                    Click the + button next to the suite selector to create a new application suite.
+                    This is useful when onboarding a completely new product line or business unit.
                   </p>
                 </div>
               </div>
@@ -429,44 +436,53 @@ const EMPTY_FORM = (): ProjectForm => ({
         </div>
       }
 
-      <!-- ════════════════════════════ MANAGE PROJECTS ════════════════════════════ -->
+      <!-- ══════════════ MANAGE PROJECTS ══════════════ -->
       @if (tab() === 'manage-projects') {
         <div class="rounded-xl border bg-card p-6 space-y-4">
           <div>
             <h2 class="font-semibold text-lg">Existing Projects</h2>
-            <p class="text-sm text-muted-foreground mt-0.5">
-              Manage and update existing projects in your catalog
-            </p>
+            <p class="text-sm text-muted-foreground mt-0.5">Manage and update existing projects in your catalog</p>
           </div>
-          <div class="space-y-2">
-            @for (p of allProjects(); track p.id) {
-              <div class="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/40 transition-colors">
-                <div>
-                  <h4 class="font-semibold text-sm">{{ p.name }}</h4>
-                  <p class="text-xs text-muted-foreground mt-0.5">
-                    {{ p.suite }} &bull; {{ p.modules.length }} modules
-                  </p>
+          @if (loadingProjects()) {
+            <div class="space-y-2">
+              @for (_ of [1,2,3]; track $index) {
+                <div class="h-16 rounded-lg bg-muted animate-pulse"></div>
+              }
+            </div>
+          } @else {
+            <div class="space-y-2">
+              @for (p of allProjects(); track p.id) {
+                <div class="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/40 transition-colors">
+                  <div>
+                    <h4 class="font-semibold text-sm">{{ p.name }}</h4>
+                    <p class="text-xs text-muted-foreground mt-0.5">
+                      {{ p.suite }} &bull;
+                      @if (p.status) { <span [class]="statusClass(p.status)">{{ p.status }}</span> }
+                    </p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button (click)="openEdit(p)"
+                      class="h-8 px-3 rounded-lg border text-xs font-medium hover:bg-muted transition-colors flex items-center gap-1.5">
+                      <lucide-icon name="pencil" class="h-3 w-3"></lucide-icon>
+                      Edit
+                    </button>
+                    <button (click)="askDelete(p)"
+                      class="h-8 px-3 rounded-lg border border-destructive/30 bg-destructive/5
+                             flex items-center gap-1.5 hover:bg-destructive/15 transition-colors">
+                      <lucide-icon name="trash-2" class="h-3.5 w-3.5 text-destructive"></lucide-icon>
+                      <span class="text-xs font-medium text-destructive">Delete</span>
+                    </button>
+                  </div>
                 </div>
-                <div class="flex gap-2">
-                  <button class="h-8 px-3 rounded-lg border text-xs font-medium hover:bg-muted transition-colors">
-                    Edit
-                  </button>
-                  <button (click)="askDelete(p)"
-                    class="h-8 px-3 rounded-lg border border-destructive/30 bg-destructive/5
-                           flex items-center justify-center gap-1.5 hover:bg-destructive/15 transition-colors">
-                    <lucide-icon name="trash-2" class="h-4 w-4 text-destructive"></lucide-icon>
-                    <span class="text-xs font-medium text-destructive">Delete</span>
-                  </button>
-                </div>
-              </div>
-            }
-            @empty {
-              <p class="text-center py-10 text-sm text-muted-foreground">No projects found.</p>
-            }
-          </div>
+              }
+              @if (allProjects().length === 0) {
+                <p class="text-center py-10 text-sm text-muted-foreground">No projects found.</p>
+              }
+            </div>
+          }
         </div>
 
-        <!-- Delete dialog -->
+        <!-- Delete confirm dialog -->
         @if (deleteTarget()) {
           <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
                (click)="deleteTarget.set(null)">
@@ -480,10 +496,90 @@ const EMPTY_FORM = (): ProjectForm => ({
               </p>
               <div class="flex justify-end gap-3 pt-1">
                 <button (click)="deleteTarget.set(null)" class="btn-outline">Cancel</button>
-                <button (click)="doDelete()"
+                <button (click)="doDelete()" [disabled]="saving()"
                   class="h-10 px-4 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium
-                         hover:bg-destructive/90 transition-colors">
-                  Delete
+                         hover:bg-destructive/90 transition-colors disabled:opacity-50">
+                  @if (saving()) { Deleting... } @else { Delete }
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Edit modal -->
+        @if (editTarget()) {
+          <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+               (click)="editTarget.set(null)">
+            <div class="bg-background rounded-xl border shadow-xl p-6 max-w-lg w-full space-y-4 max-h-[90vh] overflow-y-auto"
+                 (click)="$event.stopPropagation()">
+              <h3 class="font-semibold text-lg flex items-center gap-2">
+                <lucide-icon name="pencil" class="h-5 w-5"></lucide-icon>
+                Edit Project
+              </h3>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="field-label">Project Name *</label>
+                  <input type="text" [value]="editForm.name" (input)="editForm.name = val($event)"
+                    class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">Suite</label>
+                  <div class="relative">
+                    <select [value]="editForm.suite" (change)="editForm.suite = val($event)"
+                      class="field-input appearance-none pr-8 cursor-pointer">
+                      @for (s of suites(); track s.id) {
+                        <option [value]="s.id">{{ s.name }}</option>
+                      }
+                    </select>
+                    <lucide-icon name="chevron-down"
+                      class="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none">
+                    </lucide-icon>
+                  </div>
+                </div>
+                <div>
+                  <label class="field-label">Status</label>
+                  <div class="relative">
+                    <select [value]="editForm.status" (change)="editForm.status = val($event)"
+                      class="field-input appearance-none pr-8 cursor-pointer">
+                      <option value="active">Active</option>
+                      <option value="beta">Beta</option>
+                      <option value="deprecated">Deprecated</option>
+                    </select>
+                    <lucide-icon name="chevron-down"
+                      class="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none">
+                    </lucide-icon>
+                  </div>
+                </div>
+                <div>
+                  <label class="field-label">Description</label>
+                  <textarea [value]="editForm.description" (input)="editForm.description = val($event)"
+                    rows="3" class="field-textarea"></textarea>
+                </div>
+                <div>
+                  <label class="field-label">Repository URL</label>
+                  <input type="url" [value]="editForm.repositoryUrl" (input)="editForm.repositoryUrl = val($event)"
+                    placeholder="https://github.com/org/repo" class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">Confluence Link</label>
+                  <input type="url" [value]="editForm.confluenceLink" (input)="editForm.confluenceLink = val($event)"
+                    placeholder="https://confluence.company.com/..." class="field-input" />
+                </div>
+                <div>
+                  <label class="field-label">Architecture Diagram URL</label>
+                  <input type="url" [value]="editForm.diagramUrl" (input)="editForm.diagramUrl = val($event)"
+                    placeholder="https://example.com/diagram.png" class="field-input" />
+                </div>
+              </div>
+
+              <div class="flex justify-end gap-3 pt-2">
+                <button (click)="editTarget.set(null)" class="btn-outline">Cancel</button>
+                <button (click)="doEdit()" [disabled]="saving()" class="btn-primary">
+                  @if (saving()) { Saving... } @else {
+                    <lucide-icon name="save" class="h-4 w-4"></lucide-icon>
+                    Save Changes
+                  }
                 </button>
               </div>
             </div>
@@ -491,16 +587,12 @@ const EMPTY_FORM = (): ProjectForm => ({
         }
       }
 
-      <!-- ════════════════════════════ SETTINGS ════════════════════════════ -->
+      <!-- ══════════════ SETTINGS ══════════════ -->
       @if (tab() === 'settings') {
         <div class="rounded-xl border bg-card p-6 space-y-2">
           <h2 class="font-semibold text-lg">Admin Settings</h2>
-          <p class="text-sm text-muted-foreground">
-            Configure admin panel preferences and permissions
-          </p>
-          <p class="text-sm text-muted-foreground py-10 text-center">
-            Settings configuration coming soon...
-          </p>
+          <p class="text-sm text-muted-foreground">Configure admin panel preferences and permissions</p>
+          <p class="text-sm text-muted-foreground py-10 text-center">Settings configuration coming soon...</p>
         </div>
       }
 
@@ -508,23 +600,40 @@ const EMPTY_FORM = (): ProjectForm => ({
   `,
 })
 export class AdminComponent implements OnInit {
-  private title = inject(Title);
+  private title          = inject(Title);
+  private projectService = inject(ProjectService);
 
-  tab          = signal<'add-project' | 'manage-projects' | 'settings'>('add-project');
-  newSuiteMode = signal(false);
-  selectedFile = signal<File | null>(null);
-  toast        = signal<Toast | null>(null);
-  deleteTarget = signal<Project | null>(null);
-  allProjects  = signal<Project[]>([]);
+  tab             = signal<'add-project' | 'manage-projects' | 'settings'>('add-project');
+  newSuiteMode    = signal(false);
+  selectedFile    = signal<File | null>(null);
+  toast           = signal<Toast | null>(null);
+  deleteTarget    = signal<Project | null>(null);
+  editTarget      = signal<Project | null>(null);
+  allProjects     = signal<Project[]>([]);
+  suites          = signal<{ id: string; name: string }[]>([]);
+  saving          = signal(false);
+  loadingProjects = signal(false);
 
-  form: ProjectForm = EMPTY_FORM();
-
-  readonly suiteNames = MOCK_SUITES.map(s => s.name);
+  form:     ProjectForm = EMPTY_FORM();
+  editForm: ProjectForm = EMPTY_FORM();
 
   ngOnInit() {
     this.title.setTitle('DeepWiki — Admin');
-    this.tab.set('add-project');
-    this.allProjects.set(MOCK_SUITES.flatMap(s => s.projects));
+    this._loadSuites();
+  }
+
+  private _loadSuites(): void {
+    this.projectService.getSuites().subscribe({
+      next: (s) => {
+        this.suites.set(s.map(x => ({ id: x.id, name: x.name })));
+        this.allProjects.set(s.flatMap(suite => suite.projects));
+      },
+      error: () => {
+        const fallback = MOCK_SUITES;
+        this.suites.set(fallback.map(x => ({ id: x.id, name: x.name })));
+        this.allProjects.set(fallback.flatMap(s => s.projects));
+      },
+    });
   }
 
   addTech(input: HTMLInputElement): void {
@@ -549,7 +658,6 @@ export class AdminComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = e => {
       this.form = { ...this.form, architectureDiagram: e.target?.result as string };
-      this.notify('success', 'Architecture diagram uploaded successfully!');
     };
     reader.readAsDataURL(file);
   }
@@ -564,13 +672,68 @@ export class AdminComponent implements OnInit {
       this.notify('error', 'Please fill in required fields: Name and Description.');
       return;
     }
-    const suite = this.newSuiteMode() ? this.form.newSuite.trim() : this.form.suite;
-    if (!suite) {
+
+    let suiteId = this.form.suite;
+
+    if (this.newSuiteMode()) {
+      if (!this.form.newSuite.trim()) {
+        this.notify('error', 'Please enter a name for the new suite.');
+        return;
+      }
+      this.saving.set(true);
+      this.projectService.createSuite({
+        name: this.form.newSuite.trim(),
+        description: this.form.newSuiteDesc.trim(),
+      }).subscribe({
+        next: (res) => {
+          suiteId = res.id;
+          this._createProject(suiteId);
+        },
+        error: () => {
+          this.saving.set(false);
+          this.notify('error', 'Failed to create suite. Please try again.');
+        },
+      });
+      return;
+    }
+
+    if (!suiteId) {
       this.notify('error', 'Please select or create an application suite.');
       return;
     }
-    this.notify('success', `Project "${this.form.name}" added successfully!`);
-    this.resetForm();
+    this.saving.set(true);
+    this._createProject(suiteId);
+  }
+
+  private _createProject(suiteId: string): void {
+    const diagram = this.form.diagramMode === 'url'
+      ? this.form.diagramUrl
+      : this.form.architectureDiagram;
+
+    this.projectService.createProject({
+      name:                 this.form.name.trim(),
+      description:          this.form.description.trim(),
+      story:                this.form.story.trim(),
+      suite_id:             suiteId,
+      tech_stack:           this.form.techStack,
+      repository_url:       this.form.repositoryUrl.trim(),
+      confluence_link:      this.form.confluenceLink.trim(),
+      architecture_diagram: diagram,
+      language:             this.form.techStack[0] ?? '',
+      status:               this.form.status,
+    }).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.notify('success', `Project "${this.form.name}" added successfully!`);
+        this.resetForm();
+        this._loadSuites();
+      },
+      error: (err) => {
+        this.saving.set(false);
+        const detail = err?.error?.detail ?? 'Failed to add project. Please try again.';
+        this.notify('error', detail);
+      },
+    });
   }
 
   resetForm(): void {
@@ -579,14 +742,85 @@ export class AdminComponent implements OnInit {
     this.newSuiteMode.set(false);
   }
 
+  openEdit(p: Project): void {
+    this.editTarget.set(p);
+    this.editForm = {
+      name:                p.name,
+      suite:               p.suite,
+      newSuite:            '',
+      newSuiteDesc:        '',
+      techStack:           [...p.techStack],
+      description:         p.description,
+      story:               p.story ?? '',
+      repositoryUrl:       p.repositoryUrl ?? '',
+      confluenceLink:      p.confluenceLink ?? '',
+      architectureDiagram: p.architectureDiagram ?? '',
+      diagramMode:         'url',
+      diagramUrl:          p.architectureDiagram ?? '',
+      status:              p.status ?? 'active',
+    };
+  }
+
+  doEdit(): void {
+    const t = this.editTarget();
+    if (!t) return;
+    if (!this.editForm.name.trim()) {
+      this.notify('error', 'Project name is required.');
+      return;
+    }
+    this.saving.set(true);
+    this.projectService.updateProject(t.id, {
+      name:                 this.editForm.name.trim(),
+      description:          this.editForm.description.trim(),
+      story:                this.editForm.story.trim(),
+      suite_id:             this.editForm.suite || undefined,
+      tech_stack:           this.editForm.techStack,
+      repository_url:       this.editForm.repositoryUrl.trim(),
+      confluence_link:      this.editForm.confluenceLink.trim(),
+      architecture_diagram: this.editForm.diagramUrl.trim(),
+      status:               this.editForm.status,
+    }).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.editTarget.set(null);
+        this.notify('success', `"${this.editForm.name}" updated successfully.`);
+        this._loadSuites();
+      },
+      error: (err) => {
+        this.saving.set(false);
+        const detail = err?.error?.detail ?? 'Failed to update project.';
+        this.notify('error', detail);
+      },
+    });
+  }
+
   askDelete(p: Project): void { this.deleteTarget.set(p); }
 
   doDelete(): void {
     const t = this.deleteTarget();
     if (!t) return;
-    this.allProjects.update(list => list.filter(p => p.id !== t.id));
-    this.notify('success', `"${t.name}" deleted.`);
-    this.deleteTarget.set(null);
+    this.saving.set(true);
+    this.projectService.deleteProject(t.id).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.allProjects.update(list => list.filter(p => p.id !== t.id));
+        this.notify('success', `"${t.name}" deleted.`);
+        this.deleteTarget.set(null);
+      },
+      error: (err) => {
+        this.saving.set(false);
+        const detail = err?.error?.detail ?? 'Failed to delete project.';
+        this.notify('error', detail);
+        this.deleteTarget.set(null);
+      },
+    });
+  }
+
+  statusClass(status: string): string {
+    if (status === 'active')     return 'text-green-600 font-medium';
+    if (status === 'beta')       return 'text-blue-600 font-medium';
+    if (status === 'deprecated') return 'text-muted-foreground line-through';
+    return '';
   }
 
   val(e: Event): string {
