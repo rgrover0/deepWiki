@@ -14,7 +14,7 @@ import { SuiteGroupComponent } from './components/suite-group/suite-group.compon
 
       <!-- Hero -->
       <div class="space-y-2">
-        <h1 class="text-4xl font-bold tracking-tight">Project Suite</h1>
+        <h1 class="text-4xl font-bold tracking-tight">Project Component</h1>
         <p class="text-muted-foreground text-lg">
           @if (loading()) {
             Loading projects...
