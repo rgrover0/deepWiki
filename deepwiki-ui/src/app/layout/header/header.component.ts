@@ -11,13 +11,13 @@ import { LucideAngularModule } from 'lucide-angular';
     <header class="sticky top-0 z-50 w-full border-b bg-primary text-primary-foreground">
       <div class="container mx-auto flex h-16 items-center px-4">
 
-        <a routerLink="/" class="flex items-center space-x-2">
+        <a routerLink="/projects" class="flex items-center space-x-2">
           <lucide-icon name="layers" class="h-6 w-6 text-penske-yellow" />
           <span class="font-bold text-xl">DeepWiki</span>
         </a>
 
         <nav class="ml-10 flex gap-6">
-          <a routerLink="/" routerLinkActive="text-penske-yellow" [routerLinkActiveOptions]="{exact:true}"
+           <a routerLink="/projects" routerLinkActive="text-penske-yellow" [routerLinkActiveOptions]="{exact:true}"
              class="text-sm font-medium flex items-center gap-2 hover:text-penske-yellow transition-colors">
             <lucide-icon name="layers" class="h-4 w-4" /> All Projects
           </a>

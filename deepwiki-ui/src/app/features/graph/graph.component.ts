@@ -50,12 +50,22 @@ import { Suite, GraphNode, GraphLevel, GraphData } from '../../core/models';
               </button>
             </div>
             <p style="color:#507898;font-size:0.78rem">Type: {{ selected()!.type }}</p>
-            @if (selected()!.type === 'project') {
+            @if (selected()!.type === 'suite-center' || selected()!.type === 'project') {
               <button (click)="drillInto(selected()!)"
                 style="margin-top:12px;padding:6px 14px;background:#2878CC;color:#fff;
                        border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-size:0.8rem">
-                Drill into project
+                Drill into {{ selected()!.type === 'suite-center' ? 'suite' : 'project' }}
               </button>
+            }
+            @if (selected()!.type === 'project-center') {
+              <p style="margin-top:10px;color:#7aa4c6;font-size:0.78rem">
+                This view shows module-level architecture. Select module nodes for details.
+              </p>
+            }
+            @if (selected()!.type === 'module') {
+              <p style="margin-top:10px;color:#7aa4c6;font-size:0.78rem">
+                Module node selected. Use Back to return to project or suite level.
+              </p>
             }
           </div>
         }
@@ -136,7 +146,12 @@ export class GraphComponent implements OnInit, AfterViewInit, OnDestroy {
       this.svgEl.nativeElement,
       this.graphData(),
       W, H,
-      node => this.ngZone.run(() => this.selected.set(node))
+      node => this.ngZone.run(() => {
+        this.selected.set(node);
+        if (node.type === 'suite-center' || node.type === 'project') {
+          this.drillInto(node);
+        }
+      })
     );
   }
 

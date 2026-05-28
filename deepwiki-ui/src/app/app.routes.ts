@@ -8,6 +8,11 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        pathMatch: 'full',
+        redirectTo: 'projects',
+      },
+      {
+        path: 'projects',
         loadComponent: () =>
           import('./features/projects/projects.component').then(m => m.ProjectsComponent),
       },
@@ -34,5 +39,5 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/graph/graph.component').then(m => m.GraphComponent),
   },
-  { path: '**', redirectTo: '' },
+  { path: '**', redirectTo: '/projects' },
 ];

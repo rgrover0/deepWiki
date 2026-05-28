@@ -17,7 +17,7 @@ import { Message } from '../../core/models';
     <div class="container mx-auto px-4 py-10">
 
       <!-- Back nav -->
-      <a routerLink="/" class="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-6">
+      <a routerLink="/projects" class="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-6">
         &#8592; All Projects
       </a>
 
@@ -204,23 +204,40 @@ import { Message } from '../../core/models';
                   (keyup.enter)="runComparison(cq.value)"
                   class="flex-1 h-10 rounded-[0.625rem] border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 <button (click)="runComparison(cq.value)"
+                  [disabled]="compareLoading()"
                   class="h-10 px-4 rounded-[0.625rem] bg-primary text-primary-foreground text-sm font-medium">
                   Compare
                 </button>
               </div>
-              @if (compareResult()) {
+              @if (compareLoading()) {
+                <div class="rounded-[0.625rem] border p-4 text-sm text-muted-foreground animate-pulse">Running comparison...</div>
+              }
+              @if (compareError()) {
+                <div class="rounded-[0.625rem] border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                  {{ compareError() }}
+                </div>
+              }
+              @if (compareData()) {
                 <div class="grid grid-cols-2 gap-4">
                   <div class="rounded-[0.625rem] border p-4">
                     <h3 class="font-semibold text-sm mb-2">With DeepWiki</h3>
-                    <p class="text-2xl font-bold text-green-600">{{ compareResult()?.wiki?.total_tokens ?? 0 | number }}</p>
+                    <p class="text-2xl font-bold text-green-600">{{ compareData()!.wiki.total_tokens ?? 0 | number }}</p>
                     <p class="text-xs text-muted-foreground">tokens</p>
+                    @if (compareData()!.wiki.answer) {
+                      <p class="text-xs text-muted-foreground mt-3 mb-1">Answer</p>
+                      <p class="text-sm">{{ compareData()!.wiki.answer }}</p>
+                    }
                   </div>
                   <div class="rounded-[0.625rem] border p-4">
                     <h3 class="font-semibold text-sm mb-2">Without (Raw)</h3>
-                    <p class="text-2xl font-bold text-destructive">{{ compareResult()?.raw?.total_tokens ?? 0 | number }}</p>
+                    <p class="text-2xl font-bold text-destructive">{{ compareData()!.raw.total_tokens ?? 0 | number }}</p>
                     <p class="text-xs text-muted-foreground">tokens</p>
+                    @if (compareData()!.raw.answer) {
+                      <p class="text-xs text-muted-foreground mt-3 mb-1">Answer</p>
+                      <p class="text-sm">{{ compareData()!.raw.answer }}</p>
+                    }
                   </div>
-                  @if (compareResult()?.wiki?.total_tokens && compareResult()?.raw?.total_tokens) {
+                  @if (compareData()!.wiki.total_tokens && compareData()!.raw.total_tokens) {
                     <div class="col-span-2 rounded-[0.625rem] border p-4 bg-green-50">
                       <p class="text-sm font-medium text-green-800">
                         {{ savings() }}% fewer tokens with DeepWiki
@@ -237,7 +254,7 @@ import { Message } from '../../core/models';
       @if (!loading() && !project()) {
         <div class="text-center py-20 text-muted-foreground">
           <p class="text-lg">Project not found.</p>
-          <a routerLink="/" class="text-sm text-primary underline">Back to projects</a>
+          <a routerLink="/projects" class="text-sm text-primary underline">Back to projects</a>
         </div>
       }
     </div>
@@ -258,6 +275,21 @@ export class ProjectDetailComponent implements OnInit {
   planLoading = signal(false);
   planResult  = signal<string | null>(null);
   compareResult = signal<any>(null);
+  compareLoading = signal(false);
+  compareError = signal<string | null>(null);
+
+  compareData = computed(() => {
+    const result = this.compareResult();
+    if (!result) return null;
+
+    // API can return either { deepwiki, raw } or { wiki, raw }, and "all" mode nests under groq/claude.
+    const payload = (result.groq && !result.deepwiki && !result.wiki) ? result.groq : result;
+    const wiki = payload.wiki ?? payload.deepwiki;
+    const raw = payload.raw;
+    if (!wiki || !raw) return null;
+
+    return { wiki, raw };
+  });
 
   tabs = [
     { id: 'modules', label: 'Modules'        },
@@ -278,7 +310,7 @@ export class ProjectDetailComponent implements OnInit {
   });
 
   savings = computed(() => {
-    const r = this.compareResult();
+    const r = this.compareData();
     if (!r?.wiki?.total_tokens || !r?.raw?.total_tokens) return 0;
     return Math.round((1 - r.wiki.total_tokens / r.raw.total_tokens) * 100);
   });
@@ -340,9 +372,17 @@ export class ProjectDetailComponent implements OnInit {
   runComparison(query: string) {
     if (!query.trim()) return;
     this.compareResult.set(null);
+    this.compareError.set(null);
+    this.compareLoading.set(true);
     this.wikiService.compare(query).subscribe({
-      next: res => this.compareResult.set(res),
-      error: () => {},
+      next: res => {
+        this.compareResult.set(res);
+        this.compareLoading.set(false);
+      },
+      error: () => {
+        this.compareError.set('Comparison API is not reachable. Check backend /compare endpoint.');
+        this.compareLoading.set(false);
+      },
     });
   }
 }

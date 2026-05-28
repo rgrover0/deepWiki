@@ -372,15 +372,34 @@ const EMPTY_FORM = (): ProjectForm => ({
                 <p class="text-sm text-muted-foreground mt-0.5">Follow these steps to add your first project</p>
               </div>
               <ul class="space-y-4">
-                @for (step of guideSteps; track step.num) {
-                  <li class="flex items-start gap-3">
-                    <div class="step-num">{{ step.num }}</div>
-                    <div>
-                      <p class="text-sm font-medium">{{ step.title }}</p>
-                      <p class="text-xs text-muted-foreground mt-0.5">{{ step.desc }}</p>
-                    </div>
-                  </li>
-                }
+                <li class="flex items-start gap-3">
+                  <div class="step-num">1</div>
+                  <div>
+                    <p class="text-sm font-medium">Fill in basic information</p>
+                    <p class="text-xs text-muted-foreground mt-0.5">Enter project name, description, and select an application suite</p>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3">
+                  <div class="step-num">2</div>
+                  <div>
+                    <p class="text-sm font-medium">Add tech stack</p>
+                    <p class="text-xs text-muted-foreground mt-0.5">List all technologies used in the project</p>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3">
+                  <div class="step-num">3</div>
+                  <div>
+                    <p class="text-sm font-medium">Link documentation</p>
+                    <p class="text-xs text-muted-foreground mt-0.5">Add repository URL and Confluence page for easy access</p>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3">
+                  <div class="step-num">4</div>
+                  <div>
+                    <p class="text-sm font-medium">Upload architecture diagram</p>
+                    <p class="text-xs text-muted-foreground mt-0.5">Visual diagrams help team members understand the system quickly</p>
+                  </div>
+                </li>
                 <li class="flex items-start gap-3">
                   <div class="step-check">
                     <lucide-icon name="check-circle-2" class="h-4 w-4 text-accent"></lucide-icon>
@@ -433,9 +452,10 @@ const EMPTY_FORM = (): ProjectForm => ({
                     Edit
                   </button>
                   <button (click)="askDelete(p)"
-                    class="h-8 w-8 rounded-lg border border-destructive/30 bg-destructive/5
-                           flex items-center justify-center hover:bg-destructive/15 transition-colors">
+                    class="h-8 px-3 rounded-lg border border-destructive/30 bg-destructive/5
+                           flex items-center justify-center gap-1.5 hover:bg-destructive/15 transition-colors">
                     <lucide-icon name="trash-2" class="h-4 w-4 text-destructive"></lucide-icon>
+                    <span class="text-xs font-medium text-destructive">Delete</span>
                   </button>
                 </div>
               </div>
@@ -501,15 +521,9 @@ export class AdminComponent implements OnInit {
 
   readonly suiteNames = MOCK_SUITES.map(s => s.name);
 
-  readonly guideSteps = [
-    { num: 1, title: 'Fill in basic information',  desc: 'Enter project name, description, and select an application suite' },
-    { num: 2, title: 'Add tech stack',              desc: 'List all technologies used in the project' },
-    { num: 3, title: 'Link documentation',          desc: 'Add repository URL and Confluence page for easy access' },
-    { num: 4, title: 'Upload architecture diagram', desc: 'Visual diagrams help team members understand the system quickly' },
-  ];
-
   ngOnInit() {
     this.title.setTitle('DeepWiki — Admin');
+    this.tab.set('add-project');
     this.allProjects.set(MOCK_SUITES.flatMap(s => s.projects));
   }
 
