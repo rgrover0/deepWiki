@@ -19,7 +19,13 @@ def list_suites():
         rows = session.run("""
             MATCH (s:ApplicationSuite)
             OPTIONAL MATCH (s)-[:HAS_REPO]->(r:Repository)
-            WITH s, collect({id: r.id, name: r.name, language: r.language}) AS repos
+            WITH s, [repo IN collect(r) WHERE repo IS NOT NULL |
+                {
+                    id: repo.id,
+                    name: repo.name,
+                    language: coalesce(repo['language'], '')
+                }
+            ] AS repos
             RETURN s.id          AS id,
                    s.name        AS name,
                    s.description AS description,
@@ -49,7 +55,7 @@ def get_suite(suite_id: str):
             OPTIONAL MATCH (r)-[:EXPOSES]->(api:APIContract)
             RETURN r.id       AS id,
                    r.name     AS name,
-                   r.language AS language,
+                   coalesce(r['language'], '') AS language,
                    count(DISTINCT api) AS api_count
             ORDER BY r.name
         """, suite_id=suite_id).data()
