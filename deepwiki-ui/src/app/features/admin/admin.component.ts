@@ -462,8 +462,16 @@ const EMPTY_FORM = (): ProjectForm => ({
 
                 <!-- Error -->
                 @if (buildJob()!.status === 'error') {
-                  <div class="rounded-lg bg-destructive/5 border border-destructive/20 p-3 text-xs text-destructive">
-                    {{ buildJob()!.error }}
+                  <div class="rounded-lg bg-destructive/5 border border-destructive/20 p-3 text-xs space-y-2">
+                    <p class="text-destructive font-semibold">{{ buildJob()!.error }}</p>
+                    @if (buildJob()!.logs?.length) {
+                      <details class="mt-1">
+                        <summary class="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+                          Show logs ({{ buildJob()!.logs!.length }} lines)
+                        </summary>
+                        <pre class="mt-2 max-h-40 overflow-y-auto text-[10px] text-muted-foreground whitespace-pre-wrap break-all leading-relaxed bg-muted/40 rounded p-2">{{ buildJob()!.logs!.slice(-20).join('\n') }}</pre>
+                      </details>
+                    }
                   </div>
                   <button (click)="retryBuild()" class="btn-primary w-full justify-center text-xs h-9">
                     <lucide-icon name="refresh-cw" class="h-3.5 w-3.5"></lucide-icon> Retry Build

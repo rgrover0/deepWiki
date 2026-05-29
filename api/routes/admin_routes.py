@@ -7,8 +7,12 @@ GET  /admin/jobs                list all active/recent jobs (debug)
 POST /admin/reindex/{repo_id}   re-trigger ingestion for an existing repo
 """
 
+import logging
+import os
 import shutil
+import subprocess
 import threading
+import traceback
 from pathlib import Path
 from typing import Optional
 import tempfile
@@ -17,6 +21,11 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from pipeline.graph.schema import get_driver
+
+logger = logging.getLogger(__name__)
+
+# Allow Railway env override for clone directory (use /tmp/repos if /app/repos is read-only)
+REPO_CLONE_DIR = os.environ.get("REPO_CLONE_DIR", "repos")
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -80,7 +89,16 @@ def _make_job() -> dict:
         "steps": [{"label": s, "status": "pending", "detail": ""} for s in PIPELINE_STEPS],
         "stats": {},
         "error": None,
+        "logs": [],
     }
+
+
+def _log(job: dict, msg: str) -> None:
+    """Append a log line to job state and emit to Python logger."""
+    logger.info("[pipeline] %s", msg)
+    job.setdefault("logs", []).append(msg)
+    if len(job["logs"]) > 100:
+        job["logs"] = job["logs"][-100:]
 
 
 def _step_start(job: dict, idx: int) -> None:
@@ -231,30 +249,23 @@ def run_orphan_repair(
 
 def _clone(repo_url: str, repo_id: str, job: dict) -> Path:
     """
-    Clone the repo. If the target directory already exists:
-      - valid git repo  → skip (already cloned, resume-safe)
-      - empty / corrupt → wipe and re-clone
+    Clone repo via `git clone --depth 1`. Detects corrupt dirs and re-clones.
+    Uses subprocess so git stderr is captured as a clean string.
     Raises _PipelineAbort on any failure.
     """
-    import git as _git
-
     raw = (repo_url or "").strip()
     if not raw:
         _fail(job, 0, "Repository URL is empty")
 
-    # Build clone URL candidates from user input.
-    # Supports forms like:
-    # - github.com/org/repo
-    # - https://github.com/org/repo
-    # - https://github.com/org/repo/tree/main
-    # - ... with or without .git
+    # Normalise URL: add https://, strip /tree/ and /blob/ suffixes
     normalized = raw
-    if normalized.startswith("github.com/"):
-        normalized = "https://" + normalized
-    if "github.com" in normalized and "/tree/" in normalized:
-        normalized = normalized.split("/tree/")[0]
-    if "github.com" in normalized and "/blob/" in normalized:
-        normalized = normalized.split("/blob/")[0]
+    for prefix in ("github.com/", "gitlab.com/", "bitbucket.org/"):
+        if normalized.startswith(prefix):
+            normalized = "https://" + normalized
+            break
+    for fragment in ("/tree/", "/blob/"):
+        if fragment in normalized:
+            normalized = normalized.split(fragment)[0]
 
     candidates: list[str] = []
     for url in (normalized, raw):
@@ -268,31 +279,57 @@ def _clone(repo_url: str, repo_id: str, job: dict) -> Path:
             if with_git not in candidates:
                 candidates.append(with_git)
 
-    repos_dir = Path("repos")
+    repos_dir = Path(REPO_CLONE_DIR)
     repos_dir.mkdir(parents=True, exist_ok=True)
     target = repos_dir / repo_id
 
-    if target.exists():
-        try:
-            _git.Repo(str(target))
-            _step_done(job, 0, f"Already cloned at repos/{repo_id}")
-            return target
-        except _git.InvalidGitRepositoryError:
-            # Directory exists but is not a valid git repo — wipe it
-            shutil.rmtree(str(target), ignore_errors=True)
+    # Resume-safe: valid git repo already present → skip
+    if target.exists() and (target / ".git").exists():
+        _log(job, f"Repo already cloned at {target}")
+        _step_done(job, 0, f"Already cloned — {target}")
+        return target
 
-    errors: list[str] = []
+    # Corrupt / partial dir → wipe before retrying
+    if target.exists():
+        _log(job, f"Wiping incomplete clone dir: {target}")
+        shutil.rmtree(str(target), ignore_errors=True)
+
+    git_errors: list[str] = []
     for url in candidates:
+        _log(job, f"git clone --depth 1 {url}")
         try:
-            _git.Repo.clone_from(url, str(target), depth=1)
-            _step_done(job, 0, f"Cloned to repos/{repo_id}")
-            return target
+            result = subprocess.run(
+                ["git", "clone", "--depth", "1", url, str(target)],
+                capture_output=True,
+                text=True,
+                timeout=180,
+            )
+            if result.returncode == 0:
+                _log(job, f"Clone succeeded → {target}")
+                _step_done(job, 0, f"Cloned {url.split('/')[-1].replace('.git', '')}")
+                return target
+            stderr = (result.stderr or result.stdout or "non-zero exit").strip()
+            short_err = stderr.splitlines()[-1][:200] if stderr else "clone failed"
+            git_errors.append(f"{url}: {short_err}")
+            _log(job, f"Clone failed for {url}: {short_err}")
+            if target.exists():
+                shutil.rmtree(str(target), ignore_errors=True)
+        except FileNotFoundError:
+            _fail(job, 0, "git binary not found. Ensure git is installed in the container.")
+        except subprocess.TimeoutExpired:
+            git_errors.append(f"{url}: timed out after 180 s")
+            _log(job, f"Clone timed out: {url}")
+            if target.exists():
+                shutil.rmtree(str(target), ignore_errors=True)
         except Exception as exc:
-            errors.append(f"{url}: {exc}")
+            short = str(exc)[:200]
+            git_errors.append(f"{url}: {short}")
+            _log(job, f"Clone error {url}: {short}")
             if target.exists():
                 shutil.rmtree(str(target), ignore_errors=True)
 
-    _fail(job, 0, " ; ".join(errors) if errors else "clone failed")
+    summary = " | ".join(git_errors[:2]) if git_errors else "clone failed"
+    _fail(job, 0, summary[:500])
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -301,7 +338,7 @@ def _clone(repo_url: str, repo_id: str, job: dict) -> Path:
 
 def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: str) -> None:
     job = _JOBS[repo_id]
-    driver = get_driver()
+    driver = None
     graph_stats: dict = {}
     contract_count = 0
     analysis_results: list = []
@@ -309,6 +346,8 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
     is_ts = False
 
     try:
+        _log(job, f"Pipeline started: repo_id={repo_id} url={repo_url or '(none)'} suite={suite_id}")
+        driver = get_driver()
         # ── Step 0: Clone ──────────────────────────────────────────────────
         _step_start(job, 0)
         repo_path: Optional[Path] = None
@@ -521,7 +560,8 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
         job["progress"] = 100
 
     except _PipelineAbort:
-        # Error state already set by _fail() — just ensure remaining steps show as cancelled
+        # Error state already set by _fail() — mark remaining steps as cancelled
+        _log(job, f"Pipeline aborted: {job.get('error', '')}")
         for step in job["steps"]:
             if step["status"] == "pending":
                 step["status"] = "cancelled"
@@ -530,22 +570,27 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
                 step["detail"] = step["detail"] or "Aborted"
 
     except Exception as exc:
-        # Unexpected error outside a named step
+        tb = traceback.format_exc()
+        _log(job, f"Unexpected pipeline error: {exc}\n{tb}")
         running_idx = next(
             (i for i, s in enumerate(job["steps"]) if s["status"] == "running"),
             None,
         )
         if running_idx is not None:
             job["steps"][running_idx]["status"] = "error"
-            job["steps"][running_idx]["detail"] = str(exc)
+            job["steps"][running_idx]["detail"] = str(exc)[:300]
         for step in job["steps"]:
             if step["status"] == "pending":
                 step["status"] = "cancelled"
         job["status"] = "error"
-        job["error"] = str(exc)
+        job["error"] = f"{type(exc).__name__}: {str(exc)[:300]}"
 
     finally:
-        driver.close()
+        if driver:
+            try:
+                driver.close()
+            except Exception:
+                pass
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -556,6 +601,23 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
 def onboard_repo(body: OnboardRequest):
     """Save project metadata to Neo4j then start the full ingestion pipeline."""
     import re, uuid as _uuid_mod
+
+    if not body.name.strip():
+        raise HTTPException(status_code=422, detail="Project name is required")
+
+    if body.repo_url.strip():
+        raw = body.repo_url.strip()
+        # Accept https://, http://, or bare github.com/... forms; reject everything else
+        looks_valid = (
+            raw.startswith("http://") or raw.startswith("https://")
+            or raw.startswith("github.com/") or raw.startswith("gitlab.com/")
+            or raw.startswith("bitbucket.org/")
+        )
+        if not looks_valid:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Repository URL '{raw[:80]}' doesn't look valid. Use https://github.com/org/repo",
+            )
 
     repo_id = re.sub(r"[^a-z0-9]+", "-", body.name.lower()).strip("-") or str(_uuid_mod.uuid4())
 

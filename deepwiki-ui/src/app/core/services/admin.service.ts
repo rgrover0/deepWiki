@@ -17,6 +17,7 @@ export interface JobStatus {
   steps: PipelineStep[];
   stats: { code_units?: number; contracts?: number };
   error?: string;
+  logs?: string[];
 }
 
 export interface OnboardRequest {
