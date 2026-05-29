@@ -50,6 +50,19 @@ class OnboardRequest(BaseModel):
     status: str = "active"
 
 
+class RepairLinksRequest(BaseModel):
+    fallback_suite_id: str = "dummy-suite"
+    fallback_suite_name: str = "Dummy Suite"
+    dry_run: bool = False
+    create_dummy_repo: bool = True
+
+
+DUMMY_SUITE_ID = "dummy-suite"
+DUMMY_SUITE_NAME = "Dummy Suite"
+DUMMY_REPO_ID = "dummy-repo"
+DUMMY_REPO_NAME = "Dummy Repository (Edit Me)"
+
+
 # ────────────────────────────────────────────────────────────────────────────
 # Job / step helpers
 # ────────────────────────────────────────────────────────────────────────────
@@ -104,6 +117,98 @@ def _recalc_progress(job: dict) -> None:
 def _slugify(text: str) -> str:
     import re
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+
+def run_orphan_repair(
+    *,
+    fallback_suite_id: str = DUMMY_SUITE_ID,
+    fallback_suite_name: str = DUMMY_SUITE_NAME,
+    dry_run: bool = False,
+    create_dummy_repo: bool = True,
+) -> dict:
+    """
+    Repair orphan repositories and optionally ensure a dummy repo exists.
+
+    This function is used by both startup auto-repair and /admin/repair-links.
+    """
+    driver = get_driver()
+    try:
+        with driver.session() as session:
+            session.run(
+                """
+                MERGE (s:ApplicationSuite {id: $id})
+                ON CREATE SET s.name = $name,
+                              s.description = 'Auto-created fallback suite for orphan repositories'
+                """,
+                id=fallback_suite_id,
+                name=fallback_suite_name,
+            )
+
+            orphan_count = session.run(
+                """
+                MATCH (r:Repository)
+                WHERE NOT EXISTS { MATCH (:ApplicationSuite)-[:HAS_REPO]->(r) }
+                RETURN count(r) AS count
+                """
+            ).single()["count"]
+
+            if dry_run:
+                repaired = 0
+                dummy_created = False
+            else:
+                repaired = session.run(
+                    """
+                    MATCH (fallback:ApplicationSuite {id: $fallback_suite_id})
+                    MATCH (r:Repository)
+                    WHERE NOT EXISTS { MATCH (:ApplicationSuite)-[:HAS_REPO]->(r) }
+                    OPTIONAL MATCH (target:ApplicationSuite {id: r.suite_id})
+                    WITH r, coalesce(target, fallback) AS suite
+                    MERGE (suite)-[:HAS_REPO]->(r)
+                    SET r.suite_id = suite.id,
+                        r.is_dummy = coalesce(r.is_dummy, false)
+                    RETURN count(r) AS repaired
+                    """,
+                    fallback_suite_id=fallback_suite_id,
+                ).single()["repaired"]
+
+                dummy_created = False
+                if create_dummy_repo:
+                    row = session.run(
+                        """
+                        MATCH (s:ApplicationSuite {id: $suite_id})
+                        MERGE (r:Repository {id: $repo_id})
+                        ON CREATE SET r.name = $repo_name,
+                                      r.description = 'Placeholder project created by auto-repair. Edit this entry in Admin.',
+                                      r.story = '',
+                                      r.tech_stack = [],
+                                      r.repository_url = '',
+                                      r.confluence_link = '',
+                                      r.architecture_diagram = '',
+                                      r.language = '',
+                                      r.status = 'beta',
+                                      r.suite_id = $suite_id,
+                                      r.is_dummy = true
+                        ON MATCH SET  r.suite_id = coalesce(r.suite_id, $suite_id),
+                                      r.is_dummy = coalesce(r.is_dummy, true)
+                        MERGE (s)-[:HAS_REPO]->(r)
+                        RETURN exists((r)<-[:HAS_REPO]-(:ApplicationSuite {id: $suite_id})) AS linked
+                        """,
+                        suite_id=fallback_suite_id,
+                        repo_id=DUMMY_REPO_ID,
+                        repo_name=DUMMY_REPO_NAME,
+                    ).single()
+                    dummy_created = bool(row and row["linked"])
+    finally:
+        driver.close()
+
+    return {
+        "dry_run": dry_run,
+        "orphans_found": orphan_count,
+        "repaired": repaired,
+        "fallback_suite_id": fallback_suite_id,
+        "dummy_repo_id": DUMMY_REPO_ID if create_dummy_repo else "",
+        "dummy_repo_created_or_linked": dummy_created,
+    }
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -427,6 +532,8 @@ def onboard_repo(body: OnboardRequest):
                 SET r.name                 = $name,
                     r.description          = $description,
                     r.story                = $story,
+                    r.suite_id             = $suite_id,
+                    r.is_dummy             = false,
                     r.tech_stack           = $tech_stack,
                     r.repository_url       = $repository_url,
                     r.confluence_link      = $confluence_link,
@@ -485,6 +592,39 @@ def list_jobs():
             for rid, j in _JOBS.items()
         ]
     }
+
+
+@router.get("/orphans")
+def list_orphan_repositories():
+    """List repositories that are not linked to any ApplicationSuite."""
+    driver = get_driver()
+    try:
+        with driver.session() as session:
+            rows = session.run(
+                """
+                MATCH (r:Repository)
+                WHERE NOT EXISTS { MATCH (:ApplicationSuite)-[:HAS_REPO]->(r) }
+                RETURN r.id AS id,
+                       coalesce(r.name, r.id) AS name,
+                       coalesce(r.suite_id, '') AS suite_id,
+                       coalesce(r.repository_url, '') AS repository_url
+                ORDER BY name
+                """
+            ).data()
+    finally:
+        driver.close()
+
+    return {"count": len(rows), "repos": rows}
+
+
+@router.post("/repair-links")
+def repair_repository_links(body: RepairLinksRequest):
+    return run_orphan_repair(
+        fallback_suite_id=body.fallback_suite_id,
+        fallback_suite_name=body.fallback_suite_name,
+        dry_run=body.dry_run,
+        create_dummy_repo=body.create_dummy_repo,
+    )
 
 
 @router.post("/reindex/{repo_id}", status_code=202)

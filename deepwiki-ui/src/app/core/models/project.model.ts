@@ -39,4 +39,5 @@ export interface Project {
   repositoryUrl?: string;
   confluenceLink?: string;
   architectureDiagram?: string;
+  isDummy?: boolean;
 }

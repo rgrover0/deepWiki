@@ -539,7 +539,14 @@ const EMPTY_FORM = (): ProjectForm => ({
               @for (p of allProjects(); track p.id) {
                 <div class="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/40 transition-colors">
                   <div class="min-w-0 flex-1">
-                    <h4 class="font-semibold text-sm truncate">{{ p.name }}</h4>
+                    <h4 class="font-semibold text-sm truncate">
+                      {{ p.name }}
+                      @if (p.isDummy) {
+                        <span class="ml-2 inline-flex items-center rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-[10px] font-semibold align-middle">
+                          DUMMY
+                        </span>
+                      }
+                    </h4>
                     <p class="text-xs text-muted-foreground mt-0.5">
                       @if (p.suite && p.suite !== 'unassigned') {
                         {{ p.suite }}
@@ -578,7 +585,8 @@ const EMPTY_FORM = (): ProjectForm => ({
                     }
                     <button (click)="openEdit(p)"
                       class="h-8 px-3 rounded-lg border text-xs font-medium hover:bg-muted transition-colors flex items-center gap-1.5">
-                      <lucide-icon name="pencil" class="h-3.5 w-3.5"></lucide-icon> Edit
+                      <lucide-icon name="pencil" class="h-3.5 w-3.5"></lucide-icon>
+                      {{ p.isDummy ? 'Fix Dummy' : 'Edit' }}
                     </button>
                     <button (click)="askDelete(p)"
                       class="h-8 px-3 rounded-lg border border-destructive/30 bg-destructive/5
@@ -854,6 +862,7 @@ export class AdminComponent implements OnInit, OnDestroy {
                 status:      (r.status as any) || 'active',
                 repositoryUrl:  r.repository_url || undefined,
                 confluenceLink: r.confluence_link || undefined,
+                isDummy: !!r.is_dummy,
               }));
             this.allProjects.set([...suiteProjects, ...orphans]);
             this.loadingProjects.set(false);
@@ -886,6 +895,7 @@ export class AdminComponent implements OnInit, OnDestroy {
               status:      (r.status as any) || 'active',
               repositoryUrl:  r.repository_url || undefined,
               confluenceLink: r.confluence_link || undefined,
+              isDummy: !!r.is_dummy,
             })));
             this.loadingProjects.set(false);
           },

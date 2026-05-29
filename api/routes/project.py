@@ -188,6 +188,8 @@ def create_project(body: CreateRepoRequest):
                     name:                 $name,
                     description:          $description,
                     story:                $story,
+                    suite_id:             $suite_id,
+                    is_dummy:             false,
                     tech_stack:           $tech_stack,
                     repository_url:       $repository_url,
                     confluence_link:      $confluence_link,
@@ -242,6 +244,7 @@ def list_all_repos():
                        coalesce(r.name, r.id)            AS name,
                        coalesce(r.description, '')        AS description,
                        coalesce(r.language, '')           AS language,
+                      coalesce(r.is_dummy, false)        AS is_dummy,
                        coalesce(r.repository_url, '')     AS repository_url,
                        coalesce(r.confluence_link, '')    AS confluence_link,
                        coalesce(r.status, 'active')       AS status,
@@ -272,6 +275,7 @@ def update_project(repo_id: str, body: UpdateRepoRequest):
             new_suite_id = raw.pop("suite_id", None)
 
             updates = {k: v for k, v in raw.items() if v is not None}
+            updates["is_dummy"] = False
 
             if updates:
                 set_clauses = ", ".join(f"r.{k} = ${k}" for k in updates)
@@ -298,6 +302,8 @@ def update_project(repo_id: str, body: UpdateRepoRequest):
                     WITH r
                     MATCH (s:ApplicationSuite {id: $suite_id})
                     CREATE (s)-[:HAS_REPO]->(r)
+                    SET r.suite_id = s.id,
+                        r.is_dummy = false
                     """,
                     repo_id=repo_id,
                     suite_id=new_suite_id,

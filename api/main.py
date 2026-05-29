@@ -59,6 +59,25 @@ def bootstrap_qdrant_collections() -> None:
         print(f"Qdrant bootstrap skipped: {exc}")
 
 
+@app.on_event("startup")
+def auto_repair_orphan_repositories() -> None:
+    """Ensure orphan repositories are linked and a dummy editable repo exists."""
+    if os.getenv("NEO4J_AUTO_REPAIR", "true").lower() in {"0", "false", "no"}:
+        print("Neo4j auto-repair disabled by NEO4J_AUTO_REPAIR")
+        return
+
+    try:
+        result = admin_routes.run_orphan_repair(
+            fallback_suite_id=os.getenv("DUMMY_SUITE_ID", admin_routes.DUMMY_SUITE_ID),
+            fallback_suite_name=os.getenv("DUMMY_SUITE_NAME", admin_routes.DUMMY_SUITE_NAME),
+            dry_run=False,
+            create_dummy_repo=True,
+        )
+        print(f"Neo4j auto-repair complete: {result}")
+    except Exception as exc:
+        print(f"Neo4j auto-repair skipped: {exc}")
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

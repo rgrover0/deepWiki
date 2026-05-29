@@ -16,6 +16,7 @@ export interface AllRepoRow {
   repository_url: string; confluence_link: string;
   status: string; tech_stack: string[];
   suite_id: string; suite_name: string;
+  is_dummy: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
