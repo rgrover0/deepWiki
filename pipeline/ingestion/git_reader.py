@@ -16,11 +16,14 @@ def clone_repo(repo_url: str, target_dir: str) -> str:
 
 
 def get_java_files(repo_path: str) -> list[str]:
-    """Recursively find all Java files in repo."""
+    """Recursively find all Java files in repo, excluding test directories."""
+    root = Path(repo_path)
     java_files = []
-    for path in Path(repo_path).rglob("*.java"):
-        # Skip test files for now
-        if "test" not in str(path).lower():
+    for path in root.rglob("*.java"):
+        # Check relative path only — don't let the repo folder name affect filtering
+        relative = path.relative_to(root)
+        rel_str = str(relative).lower()
+        if "test" not in rel_str and "/test" not in rel_str.replace("\\", "/"):
             java_files.append(str(path))
     return sorted(java_files)
 

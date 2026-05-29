@@ -425,19 +425,16 @@ const EMPTY_FORM = (): ProjectForm => ({
                     <li class="flex items-start gap-2.5 text-xs">
                       <span class="mt-0.5 flex-shrink-0">
                         @switch (step.status) {
-                          @case ('done')    { <lucide-icon name="check-circle-2" class="h-3.5 w-3.5 text-green-600"></lucide-icon> }
-                          @case ('running') { <lucide-icon name="loader-circle"  class="h-3.5 w-3.5 text-primary animate-spin"></lucide-icon> }
-                          @case ('error')   { <lucide-icon name="alert-circle"   class="h-3.5 w-3.5 text-destructive"></lucide-icon> }
-                          @default          { <lucide-icon name="clock"          class="h-3.5 w-3.5 text-muted-foreground"></lucide-icon> }
+                          @case ('done')      { <lucide-icon name="check-circle-2" class="h-3.5 w-3.5 text-green-600"></lucide-icon> }
+                          @case ('skipped')   { <lucide-icon name="minus-circle"   class="h-3.5 w-3.5 text-muted-foreground"></lucide-icon> }
+                          @case ('running')   { <lucide-icon name="loader-circle"  class="h-3.5 w-3.5 text-primary animate-spin"></lucide-icon> }
+                          @case ('error')     { <lucide-icon name="alert-circle"   class="h-3.5 w-3.5 text-destructive"></lucide-icon> }
+                          @case ('cancelled') { <lucide-icon name="ban"            class="h-3.5 w-3.5 text-muted-foreground/50"></lucide-icon> }
+                          @default            { <lucide-icon name="clock"          class="h-3.5 w-3.5 text-muted-foreground/40"></lucide-icon> }
                         }
                       </span>
                       <div class="min-w-0">
-                        <span [class]="step.status === 'pending'
-                          ? 'text-muted-foreground'
-                          : step.status === 'error' ? 'text-destructive font-medium'
-                          : 'text-foreground font-medium'">
-                          {{ step.label }}
-                        </span>
+                        <span [class]="stepLabelClass(step.status)">{{ step.label }}</span>
                         @if (step.detail) {
                           <span class="ml-1 text-muted-foreground">— {{ step.detail }}</span>
                         }
@@ -1073,7 +1070,19 @@ export class AdminComponent implements OnInit, OnDestroy {
     const repoId = this.buildRepoId();
     if (!repoId) return;
     this.buildJob.set(null);
-    this._startPolling(repoId);
+    this.saving.set(true);
+    // Restart the pipeline via reindex — the backend resets job state and re-runs from scratch.
+    // Clone step is resume-safe: if the repo was already cloned it skips re-cloning.
+    this.adminService.reindex(repoId).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this._startPolling(repoId);
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.notify('error', err?.error?.detail ?? 'Failed to restart pipeline.');
+      },
+    });
   }
 
   private _startPolling(repoId: string): void {
@@ -1217,6 +1226,17 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   // ── Utilities ─────────────────────────────────────────────────────────────
+
+  stepLabelClass(status: string): string {
+    switch (status) {
+      case 'done':      return 'text-foreground font-medium';
+      case 'running':   return 'text-primary font-medium';
+      case 'error':     return 'text-destructive font-semibold';
+      case 'skipped':   return 'text-muted-foreground';
+      case 'cancelled': return 'text-muted-foreground/50 line-through';
+      default:          return 'text-muted-foreground/60';
+    }
+  }
 
   statusClass(status: string): string {
     if (status === 'active')     return 'text-green-600 font-medium';

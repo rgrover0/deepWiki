@@ -41,6 +41,24 @@ app.include_router(feedback.router,     prefix="/feedback", tags=["Feedback"])
 app.include_router(confluence.router,  prefix="/confluence",  tags=["Confluence"])
 
 
+@app.on_event("startup")
+def bootstrap_qdrant_collections() -> None:
+    """Ensure required Qdrant collections exist before serving requests."""
+    if os.getenv("QDRANT_AUTO_BOOTSTRAP", "true").lower() in {"0", "false", "no"}:
+        print("Qdrant bootstrap disabled by QDRANT_AUTO_BOOTSTRAP")
+        return
+
+    try:
+        from pipeline.embeddings.vector_store import get_client, setup_all_collections
+
+        client = get_client()
+        setup_all_collections(client)
+        print("Qdrant collections are ready")
+    except Exception as exc:
+        # Keep API process alive; endpoints will still surface connection errors at runtime.
+        print(f"Qdrant bootstrap skipped: {exc}")
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

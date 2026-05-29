@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 
 export interface PipelineStep {
   label: string;
-  status: 'pending' | 'running' | 'done' | 'error';
+  status: 'pending' | 'running' | 'done' | 'skipped' | 'error' | 'cancelled';
   detail: string;
 }
 
