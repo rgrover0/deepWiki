@@ -11,6 +11,7 @@ import shutil
 import threading
 from pathlib import Path
 from typing import Optional
+import tempfile
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -117,6 +118,19 @@ def _recalc_progress(job: dict) -> None:
 def _slugify(text: str) -> str:
     import re
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+
+def _dir_size_bytes(path: Path) -> int:
+    if not path.exists() or not path.is_dir():
+        return 0
+    total = 0
+    for p in path.rglob("*"):
+        if p.is_file():
+            try:
+                total += p.stat().st_size
+            except OSError:
+                continue
+    return total
 
 
 def run_orphan_repair(
@@ -620,6 +634,45 @@ def list_jobs():
             }
             for rid, j in _JOBS.items()
         ]
+    }
+
+
+@router.get("/runtime/storage")
+def runtime_storage():
+    """Return disk usage and writeability details for the running container."""
+    paths = [Path("/"), Path("/app"), Path("/tmp"), Path("repos")]
+    usage = []
+    for path in paths:
+        if not path.exists():
+            continue
+        du = shutil.disk_usage(str(path))
+        usage.append({
+            "path": str(path),
+            "total_bytes": du.total,
+            "used_bytes": du.used,
+            "free_bytes": du.free,
+        })
+
+    repos_dir = Path("repos")
+    repos_size = _dir_size_bytes(repos_dir)
+
+    writable = False
+    write_error = ""
+    try:
+        probe = Path(tempfile.gettempdir()) / "deepwiki-write-probe.tmp"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+        writable = True
+    except Exception as exc:
+        write_error = str(exc)
+
+    return {
+        "cwd": str(Path.cwd()),
+        "repos_exists": repos_dir.exists(),
+        "repos_size_bytes": repos_size,
+        "tmp_writable": writable,
+        "tmp_write_error": write_error,
+        "usage": usage,
     }
 
 
