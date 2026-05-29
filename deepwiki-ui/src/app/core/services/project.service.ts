@@ -11,6 +11,13 @@ const SUITE_COLORS = ['#2878CC', '#7C3AED', '#059669', '#DC2626', '#D97706', '#0
 interface ApiRepo  { id: string; name: string; language: string; }
 interface ApiSuite { id: string; name: string; description: string; repos: ApiRepo[]; repo_count: number; }
 
+export interface AllRepoRow {
+  id: string; name: string; description: string; language: string;
+  repository_url: string; confluence_link: string;
+  status: string; tech_stack: string[];
+  suite_id: string; suite_name: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
   private http   = inject(HttpClient);
@@ -59,6 +66,14 @@ export class ProjectService {
 
   createSuite(body: { name: string; description: string }): Observable<any> {
     return this.http.post(`${this.apiUrl}/project/suite`, body);
+  }
+
+  /** Returns ALL Repository nodes — including those without a suite link. */
+  getAllRepos(): Observable<AllRepoRow[]> {
+    return this.http.get<{ repos: AllRepoRow[] }>(`${this.apiUrl}/project/all`).pipe(
+      map(res => res.repos),
+      catchError(() => of([])),
+    );
   }
 
   getArchitecture(): Observable<{ diagram: string }> {

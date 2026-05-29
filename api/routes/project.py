@@ -229,6 +229,32 @@ def create_project(body: CreateRepoRequest):
     }
 
 
+@router.get("/all")
+def list_all_repos():
+    """Return every Repository node regardless of suite membership."""
+    driver = get_driver()
+    try:
+        with driver.session() as session:
+            result = session.run("""
+                MATCH (r:Repository)
+                OPTIONAL MATCH (s:ApplicationSuite)-[:HAS_REPO]->(r)
+                RETURN r.id                              AS id,
+                       coalesce(r.name, r.id)            AS name,
+                       coalesce(r.description, '')        AS description,
+                       coalesce(r.language, '')           AS language,
+                       coalesce(r.repository_url, '')     AS repository_url,
+                       coalesce(r.confluence_link, '')    AS confluence_link,
+                       coalesce(r.status, 'active')       AS status,
+                       coalesce(r.tech_stack, [])         AS tech_stack,
+                       coalesce(s.id, '')                 AS suite_id,
+                       coalesce(s.name, '')               AS suite_name
+                ORDER BY name
+            """)
+            return {"repos": [dict(r) for r in result]}
+    finally:
+        driver.close()
+
+
 @router.patch("/{repo_id}")
 def update_project(repo_id: str, body: UpdateRepoRequest):
     driver = get_driver()
