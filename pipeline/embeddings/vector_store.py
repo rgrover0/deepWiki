@@ -1,10 +1,12 @@
 import os
 import zlib
 from qdrant_client import QdrantClient
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.models import (
     Distance, VectorParams,
     PointStruct, Filter,
-    FieldCondition, MatchValue
+    FieldCondition, MatchValue,
+    PayloadSchemaType,
 )
 from dotenv import load_dotenv
 
@@ -23,6 +25,16 @@ ALL_COLLECTIONS = [
     "deepwiki_transcripts",
     "deepwiki_timeline",
 ]
+
+# Fields used by filters in semantic/confluence search. Keep as keyword indexes.
+FILTER_INDEXES = {
+    "deepwiki_code_units": ["repo_id", "suite_id", "component_type", "unit_type", "class_name", "name"],
+    "deepwiki_api_contracts": ["repo_id", "suite_id", "method", "endpoint"],
+    "deepwiki_confluence_meeting_notes": ["suite_id", "content_type", "title"],
+    "deepwiki_confluence_api_docs": ["suite_id", "content_type", "title"],
+    "deepwiki_confluence_architecture": ["suite_id", "content_type", "title"],
+    "deepwiki_confluence_general": ["suite_id", "content_type", "title"],
+}
 
 
 def get_client() -> QdrantClient:
@@ -70,6 +82,26 @@ def setup_all_collections(client: QdrantClient):
             print(f"✅ Created collection: {name}")
         else:
             print(f"   Already exists:    {name}")
+
+    ensure_filter_indexes(client)
+
+
+def ensure_filter_indexes(client: QdrantClient) -> None:
+    """Ensure payload indexes exist for fields used in filters."""
+    existing = {c.name for c in client.get_collections().collections}
+    for collection_name, fields in FILTER_INDEXES.items():
+        if collection_name not in existing:
+            continue
+        for field in fields:
+            try:
+                client.create_payload_index(
+                    collection_name=collection_name,
+                    field_name=field,
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
+            except Exception as exc:
+                # Safe to continue: index may already exist or backend may reject duplicates.
+                print(f"Index ensure skipped for {collection_name}.{field}: {exc}")
 
 
 def migrate_from_legacy(client: QdrantClient, legacy_name: str = "deepwiki_classes",
@@ -220,13 +252,28 @@ def semantic_search(
 
     search_filter = Filter(must=must_conditions) if must_conditions else None
 
-    results = client.query_points(
-        collection_name=COLLECTION,
-        query=query_vector,
-        limit=top_k,
-        query_filter=search_filter,
-        with_payload=True
-    ).points
+    try:
+        results = client.query_points(
+            collection_name=COLLECTION,
+            query=query_vector,
+            limit=top_k,
+            query_filter=search_filter,
+            with_payload=True,
+        ).points
+    except UnexpectedResponse as exc:
+        error_text = str(exc).lower()
+        if "index required" in error_text:
+            # Self-heal older collections that were created before index bootstrap existed.
+            ensure_filter_indexes(client)
+            results = client.query_points(
+                collection_name=COLLECTION,
+                query=query_vector,
+                limit=top_k,
+                query_filter=search_filter,
+                with_payload=True,
+            ).points
+        else:
+            raise
 
     return [
         {

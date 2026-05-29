@@ -11,6 +11,7 @@ Changes vs Iteration 16:
 import time
 from fastapi import APIRouter
 from pydantic import BaseModel
+from qdrant_client.http.exceptions import UnexpectedResponse
 from pipeline.embeddings.embedder import embed_text
 from pipeline.embeddings.vector_store import get_client, semantic_search
 from pipeline.graph.schema import get_driver
@@ -117,8 +118,30 @@ def ask(req: AskRequest):
     qdrant       = get_client()
     repo_filter  = req.repo_id  if req.scope == "repo"  else None
     suite_filter = req.suite_id if req.scope == "suite" else None
-    results      = semantic_search(qdrant, query_vector, top_k=req.top_k,
-                                   repo_id=repo_filter, suite_id=suite_filter)
+    try:
+        results = semantic_search(
+            qdrant,
+            query_vector,
+            top_k=req.top_k,
+            repo_id=repo_filter,
+            suite_id=suite_filter,
+        )
+    except UnexpectedResponse as exc:
+        fb.record_query(query_id, req.question, f"QDRANT_ERROR:{strategy}", f"{adapter.provider}/{adapter.model}")
+        return {
+            "answer": f"Search backend error: {exc}",
+            "sources": [], "scores": [], "intent": intent,
+            "token_count": 0, "query_id": query_id,
+            "model_used": f"{adapter.provider}/{adapter.model}",
+        }
+    except Exception as exc:
+        fb.record_query(query_id, req.question, f"SEARCH_ERROR:{strategy}", f"{adapter.provider}/{adapter.model}")
+        return {
+            "answer": f"Search is temporarily unavailable: {exc}",
+            "sources": [], "scores": [], "intent": intent,
+            "token_count": 0, "query_id": query_id,
+            "model_used": f"{adapter.provider}/{adapter.model}",
+        }
 
     if not results:
         fb.record_query(query_id, req.question, strategy, f"{adapter.provider}/{adapter.model}")

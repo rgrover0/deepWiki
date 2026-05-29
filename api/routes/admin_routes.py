@@ -224,9 +224,35 @@ def _clone(repo_url: str, repo_id: str, job: dict) -> Path:
     """
     import git as _git
 
-    url = repo_url.strip()
-    if url.startswith("http") and not url.endswith(".git"):
-        url = url.rstrip("/") + ".git"
+    raw = (repo_url or "").strip()
+    if not raw:
+        _fail(job, 0, "Repository URL is empty")
+
+    # Build clone URL candidates from user input.
+    # Supports forms like:
+    # - github.com/org/repo
+    # - https://github.com/org/repo
+    # - https://github.com/org/repo/tree/main
+    # - ... with or without .git
+    normalized = raw
+    if normalized.startswith("github.com/"):
+        normalized = "https://" + normalized
+    if "github.com" in normalized and "/tree/" in normalized:
+        normalized = normalized.split("/tree/")[0]
+    if "github.com" in normalized and "/blob/" in normalized:
+        normalized = normalized.split("/blob/")[0]
+
+    candidates: list[str] = []
+    for url in (normalized, raw):
+        if not url:
+            continue
+        base = url.rstrip("/")
+        if base not in candidates:
+            candidates.append(base)
+        if base.startswith("http") and not base.endswith(".git"):
+            with_git = base + ".git"
+            if with_git not in candidates:
+                candidates.append(with_git)
 
     repos_dir = Path("repos")
     repos_dir.mkdir(parents=True, exist_ok=True)
@@ -241,15 +267,18 @@ def _clone(repo_url: str, repo_id: str, job: dict) -> Path:
             # Directory exists but is not a valid git repo — wipe it
             shutil.rmtree(str(target), ignore_errors=True)
 
-    try:
-        _git.Repo.clone_from(url, str(target), depth=1)
-        _step_done(job, 0, f"Cloned to repos/{repo_id}")
-        return target
-    except Exception as exc:
-        # Clean up any partial clone
-        if target.exists():
-            shutil.rmtree(str(target), ignore_errors=True)
-        _fail(job, 0, str(exc))
+    errors: list[str] = []
+    for url in candidates:
+        try:
+            _git.Repo.clone_from(url, str(target), depth=1)
+            _step_done(job, 0, f"Cloned to repos/{repo_id}")
+            return target
+        except Exception as exc:
+            errors.append(f"{url}: {exc}")
+            if target.exists():
+                shutil.rmtree(str(target), ignore_errors=True)
+
+    _fail(job, 0, " ; ".join(errors) if errors else "clone failed")
 
 
 # ────────────────────────────────────────────────────────────────────────────
