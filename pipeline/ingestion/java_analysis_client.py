@@ -32,9 +32,15 @@ def analyze_files(file_paths: list[str]) -> list[dict]:
 
 
 def analyze_files_detailed(file_paths: list[str]) -> tuple[list[dict], list[dict]]:
-    """Analyze Java files and return (results, errors) for richer pipeline diagnostics."""
+    """Analyze Java files and return (results, errors) for richer pipeline diagnostics.
+
+    Errors list only contains *unexpected* failures (HTTP errors, exceptions).
+    Files that parse successfully but contain no class definitions (e.g. pure-enum,
+    annotation types, empty) are silently skipped — they are not bugs.
+    """
     results: list[dict] = []
     errors: list[dict] = []
+    no_class_count = 0
 
     for path in file_paths:
         try:
@@ -42,16 +48,29 @@ def analyze_files_detailed(file_paths: list[str]) -> tuple[list[dict], list[dict
             if result.get("classes"):
                 results.append(result)
             else:
-                errors.append({"file": path, "error": "No classes returned by parser"})
-                logger.warning("Java parser returned no classes for file: %s", path)
+                # Expected for enums, interfaces, annotation files — not an error
+                no_class_count += 1
+                logger.debug("Java parser: no classes in %s (skipped)", path)
         except httpx.HTTPStatusError as exc:
-            body = (exc.response.text or "")[:400]
-            msg = f"HTTP {exc.response.status_code}: {body}" if body else str(exc)
+            # Capture full response body so we can diagnose parser-side 400/5xx reasons
+            try:
+                body = (exc.response.text or "")[:600]
+            except Exception:
+                body = ""
+            msg = f"HTTP {exc.response.status_code}: {body}" if body else str(exc)[:400]
             errors.append({"file": path, "error": msg})
-            logger.exception("Java parser HTTP error for %s", path)
+            logger.error(
+                "Java parser HTTP %s for %s — body: %s",
+                exc.response.status_code,
+                path,
+                body[:300] or "(empty)",
+            )
         except Exception as exc:
             errors.append({"file": path, "error": str(exc)[:400]})
             logger.exception("Java parser failed for %s", path)
+
+    if no_class_count:
+        logger.info("Java parser: %d files produced no classes (skipped, not errors)", no_class_count)
 
     return results, errors
 

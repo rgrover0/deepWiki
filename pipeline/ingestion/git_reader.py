@@ -15,11 +15,21 @@ def clone_repo(repo_url: str, target_dir: str) -> str:
     return target_dir
 
 
+# Files that are never parseable into class structures — skip to avoid parser 400s
+_SKIP_FILENAMES = {
+    "package-info.java",   # package-level annotations only
+    "module-info.java",    # module declarations
+}
+
+
 def get_java_files(repo_path: str) -> list[str]:
-    """Recursively find all Java files in repo, excluding test directories."""
+    """Recursively find all Java files in repo, excluding test directories and known non-class files."""
     root = Path(repo_path)
     java_files = []
     for path in root.rglob("*.java"):
+        # Skip known unparseable files
+        if path.name.lower() in _SKIP_FILENAMES:
+            continue
         # Check relative path only — don't let the repo folder name affect filtering
         relative = path.relative_to(root)
         rel_str = str(relative).lower()

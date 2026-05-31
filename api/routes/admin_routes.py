@@ -440,21 +440,28 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
                 analysis_results, parse_errors = analyze_files_detailed(java_files)
                 analysis_results = analysis_results or []
                 parse_errors = parse_errors or []
+
+                # Log every HTTP-error failure (with response body) so they appear in UI logs
                 if parse_errors:
-                    for err in parse_errors[:8]:
-                        _log(job, f"Java parse error: {err.get('file','<unknown>')} :: {err.get('error','unknown')}")
-                    if len(parse_errors) > 8:
-                        _log(job, f"Java parse errors truncated: {len(parse_errors) - 8} more")
+                    _log(job, f"Java parse: {len(parse_errors)} files failed (HTTP errors / exceptions)")
+                    for err in parse_errors[:10]:
+                        _log(job, f"  ✗ {Path(err.get('file','<unknown>')).name} — {err.get('error','?')[:220]}")
+                    if len(parse_errors) > 10:
+                        _log(job, f"  … {len(parse_errors) - 10} more failures (see server logs)")
+
+                parsed_count = len(analysis_results)
+                total_attempted = len(java_files)
+                _log(job, f"Java parse results: {parsed_count}/{total_attempted} files yielded classes")
+
                 if not analysis_results:
                     detail = (
-                        f"Java analysis returned no results. "
-                        f"attempted={len(java_files)}, parse_errors={len(parse_errors)}"
+                        f"Java analysis yielded no class data. "
+                        f"attempted={total_attempted}, http_errors={len(parse_errors)}"
                     )
                     if parse_errors:
-                        detail += f". first_error={parse_errors[0].get('error', '')[:180]}"
+                        detail += f". first_error={parse_errors[0].get('error', '')[:200]}"
                     _fail(job, 1, detail)
-                _log(job, f"Java parse output units: {len(analysis_results)}")
-                _step_done(job, 1, f"{len(java_files)} Java files parsed")
+                _step_done(job, 1, f"{parsed_count}/{total_attempted} Java files produced classes")
 
         else:
             # No repo (metadata-only) — skip remaining ingestion steps
