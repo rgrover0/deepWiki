@@ -387,12 +387,13 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
         if repo_path and repo_path.exists():
             if is_ts:
                 from pipeline.ingestion.ts_analysis_client import (
-                    analyse_files, is_service_healthy,
+                    analyse_files_detailed, is_service_healthy,
                 )
                 ts_files = [
                     str(p) for p in repo_path.rglob("*.ts")
                     if "node_modules" not in str(p).lower()
                 ]
+                _log(job, f"TypeScript parse candidate files: {len(ts_files)}")
                 if not ts_files:
                     _fail(job, 1, "No .ts files found in the cloned repository")
                 if not is_service_healthy():
@@ -401,17 +402,32 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
                         "TypeScript analysis service is unreachable. "
                         "Ensure ts-analysis-service is running and TS_ANALYSIS_URL is set.",
                     )
-                analysis_results = analyse_files(ts_files) or []
+                analysis_results, parse_errors = analyse_files_detailed(ts_files)
+                analysis_results = analysis_results or []
+                parse_errors = parse_errors or []
+                if parse_errors:
+                    for err in parse_errors[:8]:
+                        _log(job, f"TS parse error: {err.get('file','<unknown>')} :: {err.get('error','unknown')}")
+                    if len(parse_errors) > 8:
+                        _log(job, f"TS parse errors truncated: {len(parse_errors) - 8} more")
                 if not analysis_results:
-                    _fail(job, 1, "TypeScript analysis returned no results")
+                    detail = (
+                        f"TypeScript analysis returned no results. "
+                        f"attempted={len(ts_files)}, parse_errors={len(parse_errors)}"
+                    )
+                    if parse_errors:
+                        detail += f". first_error={parse_errors[0].get('error', '')[:180]}"
+                    _fail(job, 1, detail)
+                _log(job, f"TypeScript parse output units: {len(analysis_results)}")
                 _step_done(job, 1, f"{len(ts_files)} TypeScript files parsed")
 
             else:
                 from pipeline.ingestion.git_reader import get_java_files
                 from pipeline.ingestion.java_analysis_client import (
-                    analyze_files, is_service_healthy,
+                    analyze_files_detailed, is_service_healthy,
                 )
                 java_files = get_java_files(str(repo_path))
+                _log(job, f"Java parse candidate files: {len(java_files)}")
                 if not java_files:
                     _fail(job, 1, "No .java files found in the cloned repository")
                 if not is_service_healthy():
@@ -421,9 +437,23 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
                         "Ensure code-analysis-service is running (default port 8081) "
                         "and CODE_ANALYSIS_URL is set.",
                     )
-                analysis_results = analyze_files(java_files) or []
+                analysis_results, parse_errors = analyze_files_detailed(java_files)
+                analysis_results = analysis_results or []
+                parse_errors = parse_errors or []
+                if parse_errors:
+                    for err in parse_errors[:8]:
+                        _log(job, f"Java parse error: {err.get('file','<unknown>')} :: {err.get('error','unknown')}")
+                    if len(parse_errors) > 8:
+                        _log(job, f"Java parse errors truncated: {len(parse_errors) - 8} more")
                 if not analysis_results:
-                    _fail(job, 1, "Java analysis returned no results")
+                    detail = (
+                        f"Java analysis returned no results. "
+                        f"attempted={len(java_files)}, parse_errors={len(parse_errors)}"
+                    )
+                    if parse_errors:
+                        detail += f". first_error={parse_errors[0].get('error', '')[:180]}"
+                    _fail(job, 1, detail)
+                _log(job, f"Java parse output units: {len(analysis_results)}")
                 _step_done(job, 1, f"{len(java_files)} Java files parsed")
 
         else:

@@ -1,6 +1,9 @@
 import os
 import httpx
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 CODE_ANALYSIS_URL = os.getenv("CODE_ANALYSIS_URL", "http://localhost:8081")
 
@@ -24,15 +27,33 @@ def analyze_file(file_path: str) -> dict:
 
 def analyze_files(file_paths: list[str]) -> list[dict]:
     """Analyze multiple Java files via the service. Skips files that fail."""
-    results = []
+    results, _ = analyze_files_detailed(file_paths)
+    return results
+
+
+def analyze_files_detailed(file_paths: list[str]) -> tuple[list[dict], list[dict]]:
+    """Analyze Java files and return (results, errors) for richer pipeline diagnostics."""
+    results: list[dict] = []
+    errors: list[dict] = []
+
     for path in file_paths:
         try:
             result = analyze_file(path)
             if result.get("classes"):
                 results.append(result)
-        except Exception as e:
-            print(f"⚠️  Skipped {path}: {e}")
-    return results
+            else:
+                errors.append({"file": path, "error": "No classes returned by parser"})
+                logger.warning("Java parser returned no classes for file: %s", path)
+        except httpx.HTTPStatusError as exc:
+            body = (exc.response.text or "")[:400]
+            msg = f"HTTP {exc.response.status_code}: {body}" if body else str(exc)
+            errors.append({"file": path, "error": msg})
+            logger.exception("Java parser HTTP error for %s", path)
+        except Exception as exc:
+            errors.append({"file": path, "error": str(exc)[:400]})
+            logger.exception("Java parser failed for %s", path)
+
+    return results, errors
 
 
 def is_service_healthy() -> bool:
