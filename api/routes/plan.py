@@ -54,18 +54,34 @@ def create_plan(req: PlanRequest):
 
     with driver.session() as session:
         for r in search_results:
-            row = session.run("""
-                MATCH (c:Class {name: $name})
-                OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
-                OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
-                RETURN
-                    c.name           AS name,
-                    c.component_type AS component_type,
-                    c.package        AS package,
-                    c.wiki_summary   AS wiki_summary,
-                    collect(DISTINCT {name: m.name, return_type: m.return_type}) AS methods,
-                    collect(DISTINCT {name: f.name, type: f.type}) AS fields
-            """, name=r["name"]).single()
+            if r.get("repo_id"):
+                row = session.run("""
+                    MATCH (c:Class {repo_id: $repo_id, name: $name})
+                    OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
+                    OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
+                    RETURN
+                        c.name           AS name,
+                        c.component_type AS component_type,
+                        c.package        AS package,
+                        c.wiki_summary   AS wiki_summary,
+                        collect(DISTINCT {name: m.name, return_type: m.return_type}) AS methods,
+                        collect(DISTINCT {name: f.name, type: f.type}) AS fields
+                """, repo_id=r["repo_id"], name=r["name"]).single()
+            else:
+                row = session.run("""
+                    MATCH (c:Class {name: $name})
+                    WITH c ORDER BY c.repo_id
+                    LIMIT 1
+                    OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
+                    OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
+                    RETURN
+                        c.name           AS name,
+                        c.component_type AS component_type,
+                        c.package        AS package,
+                        c.wiki_summary   AS wiki_summary,
+                        collect(DISTINCT {name: m.name, return_type: m.return_type}) AS methods,
+                        collect(DISTINCT {name: f.name, type: f.type}) AS fields
+                """, name=r["name"]).single()
 
             if row:
                 data = dict(row)

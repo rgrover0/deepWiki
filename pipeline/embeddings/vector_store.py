@@ -278,6 +278,8 @@ def semantic_search(
     return [
         {
             "name":          r.payload.get("name", ""),
+            "repo_id":       r.payload.get("repo_id", ""),
+            "suite_id":      r.payload.get("suite_id", ""),
             "component_type": r.payload.get("component_type", ""),
             "package":       r.payload.get("package", ""),
             "methods":       r.payload.get("method_names", []),

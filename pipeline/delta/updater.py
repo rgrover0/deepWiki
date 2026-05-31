@@ -13,7 +13,11 @@ from pipeline.embeddings.vector_store import get_client, COLLECTION
 from qdrant_client.models import PointStruct
 
 
-def update_neo4j_for_file(file_path: str) -> list[str]:
+def update_neo4j_for_file(
+    file_path: str,
+    repo_id: str = "spring-petclinic",
+    suite_id: str = "",
+) -> list[str]:
     """
     Re-analyze a changed file and update Neo4j.
     Returns list of updated class names.
@@ -32,36 +36,38 @@ def update_neo4j_for_file(file_path: str) -> list[str]:
         for cls in result["classes"]:
             # Remove old methods and fields before rewriting
             session.run("""
-                MATCH (c:Class {name: $name})-[:HAS_METHOD]->(m:Method)
+                MATCH (c:Class {repo_id: $repo_id, name: $name})-[:HAS_METHOD]->(m:Method)
                 DETACH DELETE m
-            """, name=cls["name"])
+            """, repo_id=repo_id, name=cls["name"])
 
             session.run("""
-                MATCH (c:Class {name: $name})-[:HAS_FIELD]->(f:Field)
+                MATCH (c:Class {repo_id: $repo_id, name: $name})-[:HAS_FIELD]->(f:Field)
                 DETACH DELETE f
-            """, name=cls["name"])
+            """, repo_id=repo_id, name=cls["name"])
 
             # Rewrite with fresh data
-            write_class(session, cls, package, file_path)
-            write_methods(session, cls)
-            write_fields(session, cls)
+            write_class(session, cls, package, file_path, repo_id, suite_id)
+            write_methods(session, cls, repo_id)
+            write_fields(session, cls, repo_id)
             updated.append(cls["name"])
 
-        write_dependencies(session, result)
+        write_dependencies(session, result, repo_id)
 
     driver.close()
     return updated
 
 
-def update_wiki_summary(cls: dict) -> str:
+def update_wiki_summary(cls: dict, repo_id: str = "spring-petclinic") -> str:
     """Regenerate LLM summary for a class."""
     summary = summarize_class(cls)
 
     driver = get_driver()
     with driver.session() as session:
         session.run(
-            "MATCH (c:Class {name: $name}) SET c.wiki_summary = $summary",
-            name=cls["name"], summary=summary
+            "MATCH (c:Class {repo_id: $repo_id, name: $name}) SET c.wiki_summary = $summary",
+            repo_id=repo_id,
+            name=cls["name"],
+            summary=summary
         )
     driver.close()
 
@@ -100,13 +106,14 @@ def update_qdrant_for_class(cls: dict, summary: str, point_id: int):
                 "method_names":   [m["name"] for m in cls.get("methods", [])],
                 "field_names":    [f["name"] for f in cls.get("fields", [])],
                 "repo_id":        cls.get("repo_id", "spring-petclinic"),
+                "suite_id":       cls.get("suite_id", ""),
                 "unit_type":      "class",
             }
         )]
     )
 
 
-def get_qdrant_id_for_class(class_name: str) -> int:
+def get_qdrant_id_for_class(class_name: str, repo_id: str = "spring-petclinic") -> int:
     """Get existing Qdrant point ID for a class, or assign a new one."""
     qdrant = get_client()
     results = qdrant.scroll(
@@ -117,7 +124,10 @@ def get_qdrant_id_for_class(class_name: str) -> int:
     )[0]
 
     for point in results:
-        if point.payload.get("name") == class_name:
+        if (
+            point.payload.get("name") == class_name
+            and point.payload.get("repo_id") == repo_id
+        ):
             return point.id
 
     # New class — use next available ID

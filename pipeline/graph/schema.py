@@ -17,10 +17,13 @@ def get_driver():
 def setup_schema(driver):
     """Create constraints and indexes."""
     queries = [
+        # Drop legacy global-only constraints before creating repo-scoped ones.
+        "DROP CONSTRAINT class_unique IF EXISTS",
+        "DROP CONSTRAINT file_unique IF EXISTS",
         # Phase 0 — base nodes
-        "CREATE CONSTRAINT class_unique IF NOT EXISTS FOR (c:Class) REQUIRE c.name IS UNIQUE",
+        "CREATE CONSTRAINT class_repo_unique IF NOT EXISTS FOR (c:Class) REQUIRE (c.repo_id, c.name) IS UNIQUE",
         "CREATE CONSTRAINT package_unique IF NOT EXISTS FOR (p:Package) REQUIRE p.name IS UNIQUE",
-        "CREATE CONSTRAINT file_unique IF NOT EXISTS FOR (f:JavaFile) REQUIRE f.path IS UNIQUE",
+        "CREATE CONSTRAINT file_repo_unique IF NOT EXISTS FOR (f:JavaFile) REQUIRE (f.repo_id, f.path) IS UNIQUE",
         "CREATE INDEX method_id IF NOT EXISTS FOR (m:Method) ON (m.id)",
         "CREATE INDEX field_id IF NOT EXISTS FOR (f:Field) ON (f.id)",
         # Iteration 12 — hierarchy + API nodes

@@ -67,18 +67,34 @@ def build_wiki_context(query: str, top_k: int = 4) -> tuple[str, list]:
 
     with driver.session() as session:
         for r in search_results:
-            row = session.run("""
-                MATCH (c:Class {name: $name})
-                OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
-                OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
-                RETURN
-                    c.name           AS name,
-                    c.component_type AS type,
-                    c.package        AS package,
-                    c.wiki_summary   AS summary,
-                    collect(DISTINCT m.name) AS methods,
-                    collect(DISTINCT f.name) AS fields
-            """, name=r["name"]).single()
+            if r.get("repo_id"):
+                row = session.run("""
+                    MATCH (c:Class {repo_id: $repo_id, name: $name})
+                    OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
+                    OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
+                    RETURN
+                        c.name           AS name,
+                        c.component_type AS type,
+                        c.package        AS package,
+                        c.wiki_summary   AS summary,
+                        collect(DISTINCT m.name) AS methods,
+                        collect(DISTINCT f.name) AS fields
+                """, repo_id=r["repo_id"], name=r["name"]).single()
+            else:
+                row = session.run("""
+                    MATCH (c:Class {name: $name})
+                    WITH c ORDER BY c.repo_id
+                    LIMIT 1
+                    OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
+                    OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
+                    RETURN
+                        c.name           AS name,
+                        c.component_type AS type,
+                        c.package        AS package,
+                        c.wiki_summary   AS summary,
+                        collect(DISTINCT m.name) AS methods,
+                        collect(DISTINCT f.name) AS fields
+                """, name=r["name"]).single()
 
             if row:
                 methods = ", ".join(
@@ -180,10 +196,17 @@ def run_claude_wiki(
     driver = get_driver()
     with driver.session() as session:
         for r in results:
-            row = session.run(
-                "MATCH (c:Class {name: $name}) RETURN c.file AS file",
-                name=r["name"]
-            ).single()
+            if r.get("repo_id"):
+                row = session.run(
+                    "MATCH (c:Class {repo_id: $repo_id, name: $name}) RETURN c.file AS file",
+                    repo_id=r["repo_id"],
+                    name=r["name"],
+                ).single()
+            else:
+                row = session.run(
+                    "MATCH (c:Class {name: $name}) RETURN c.file AS file ORDER BY c.repo_id LIMIT 1",
+                    name=r["name"],
+                ).single()
             if row and row["file"]:
                 source_files.append(row["file"])
     driver.close()

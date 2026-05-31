@@ -138,6 +138,22 @@ def _slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
+def _repo_id_from_input(project_name: str, repo_url: str) -> str:
+    """Prefer URL-derived repo id; fallback to project name."""
+    import re
+
+    raw = (repo_url or "").strip().rstrip("/")
+    if raw:
+        for fragment in ("/tree/", "/blob/"):
+            if fragment in raw:
+                raw = raw.split(fragment)[0]
+        leaf = raw.split("/")[-1].replace(".git", "").strip()
+        if leaf:
+            return re.sub(r"[^a-z0-9]+", "-", leaf.lower()).strip("-")
+
+    return _slugify(project_name) or "repo"
+
+
 def _dir_size_bytes(path: Path) -> int:
     if not path.exists() or not path.is_dir():
         return 0
@@ -420,7 +436,12 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
         if analysis_results:
             try:
                 from pipeline.graph.writer import write_analysis
-                graph_stats = write_analysis(driver, analysis_results)
+                graph_stats = write_analysis(
+                    driver,
+                    analysis_results,
+                    repo_id=repo_id,
+                    suite_id=suite_id,
+                )
                 total = graph_stats.get("classes", 0) + graph_stats.get("methods", 0)
                 _step_done(job, 2, f"{total} code units written to graph")
             except Exception as exc:
@@ -463,8 +484,18 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
                 from pipeline.graph.api_impact import run_api_impact_nightly
                 from pipeline.graph.method_writer import write_all_method_data
 
-                write_all_method_data(driver, analysis_results, method_summaries)
-                contract_count = write_all_api_contracts(driver, analysis_results, repo_id)
+                write_all_method_data(
+                    driver,
+                    analysis_results,
+                    method_summaries,
+                    repo_id=repo_id,
+                )
+                contract_count = write_all_api_contracts(
+                    driver,
+                    analysis_results,
+                    repo_id=repo_id,
+                    suite_id=suite_id,
+                )
                 run_api_impact_nightly(driver)
                 _step_done(job, 4, f"{contract_count} contracts extracted")
             except Exception as exc:
@@ -489,9 +520,14 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
                         summary = method_summaries.get(cls["name"], {}).get(method["name"], "")
                         texts.append(build_method_text(cls["name"], method, summary))
                         payloads.append({
+                            # Keep payload contract aligned with semantic_search + /ask.
+                            "name": cls["name"],
+                            "class_name": cls["name"],
+                            "unit_type": "method",
+                            "logic_summary": summary,
                             "repo_id": repo_id,
-                            "class":  cls["name"],
-                            "method": method["name"],
+                            "suite_id": suite_id,
+                            "method_name": method["name"],
                         })
             if texts:
                 vectors = embed_batch(texts)
@@ -619,11 +655,20 @@ def onboard_repo(body: OnboardRequest):
                 detail=f"Repository URL '{raw[:80]}' doesn't look valid. Use https://github.com/org/repo",
             )
 
-    repo_id = re.sub(r"[^a-z0-9]+", "-", body.name.lower()).strip("-") or str(_uuid_mod.uuid4())
+    base_repo_id = _repo_id_from_input(body.name, body.repo_url)
+    repo_id = base_repo_id or str(_uuid_mod.uuid4())
 
     driver = get_driver()
     try:
         with driver.session() as session:
+            # Avoid collisions for unrelated projects with same display name.
+            candidate = repo_id
+            i = 2
+            while session.run("MATCH (r:Repository {id: $id}) RETURN r.id", id=candidate).single():
+                candidate = f"{repo_id}-{i}"
+                i += 1
+            repo_id = candidate
+
             suite_row = session.run(
                 "MATCH (s:ApplicationSuite {id: $id}) RETURN s.id",
                 id=body.suite_id,

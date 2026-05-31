@@ -48,19 +48,36 @@ def run_deepwiki_approach(query: str, top_k: int = 4) -> dict:
 
     with driver.session() as session:
         for r in search_results:
-            row = session.run("""
-                MATCH (c:Class {name: $name})
-                OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
-                OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
-                RETURN
-                    c.name           AS name,
-                    c.component_type AS type,
-                    c.package        AS package,
-                    c.wiki_summary   AS summary,
-                    c.file           AS file,
-                    collect(DISTINCT m.name) AS methods,
-                    collect(DISTINCT f.name) AS fields
-            """, name=r["name"]).single()
+            if r.get("repo_id"):
+                row = session.run("""
+                    MATCH (c:Class {repo_id: $repo_id, name: $name})
+                    OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
+                    OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
+                    RETURN
+                        c.name           AS name,
+                        c.component_type AS type,
+                        c.package        AS package,
+                        c.wiki_summary   AS summary,
+                        c.file           AS file,
+                        collect(DISTINCT m.name) AS methods,
+                        collect(DISTINCT f.name) AS fields
+                """, repo_id=r["repo_id"], name=r["name"]).single()
+            else:
+                row = session.run("""
+                    MATCH (c:Class {name: $name})
+                    WITH c ORDER BY c.repo_id
+                    LIMIT 1
+                    OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
+                    OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
+                    RETURN
+                        c.name           AS name,
+                        c.component_type AS type,
+                        c.package        AS package,
+                        c.wiki_summary   AS summary,
+                        c.file           AS file,
+                        collect(DISTINCT m.name) AS methods,
+                        collect(DISTINCT f.name) AS fields
+                """, name=r["name"]).single()
 
             if row:
                 methods = ", ".join(

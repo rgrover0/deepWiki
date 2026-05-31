@@ -157,10 +157,24 @@ def ask(req: AskRequest):
 
     with driver.session() as session:
         for r in results:
-            row = session.run("""
-                MATCH (c:Class {name: $name})
-                RETURN c.wiki_summary AS summary, c.component_type AS type
-            """, name=r["name"]).single()
+            if req.scope == "repo":
+                row = session.run("""
+                    MATCH (c:Class {repo_id: $repo_id, name: $name})
+                    RETURN c.wiki_summary AS summary, c.component_type AS type
+                """, repo_id=req.repo_id, name=r["name"]).single()
+            elif req.scope == "suite":
+                row = session.run("""
+                    MATCH (c:Class {suite_id: $suite_id, name: $name})
+                    RETURN c.wiki_summary AS summary, c.component_type AS type
+                    ORDER BY c.repo_id
+                    LIMIT 1
+                """, suite_id=req.suite_id, name=r["name"]).single()
+            else:
+                row = session.run("""
+                    MATCH (c:Class {name: $name})
+                    RETURN c.wiki_summary AS summary, c.component_type AS type
+                    LIMIT 1
+                """, name=r["name"]).single()
             if row and row["summary"]:
                 context_parts.append(f"[{row['type']}] {r['name']}: {row['summary']}")
 

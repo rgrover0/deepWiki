@@ -27,6 +27,8 @@ def get_class(name: str):
     with driver.session() as session:
         result = session.run("""
             MATCH (c:Class {name: $name})
+            WITH c ORDER BY c.repo_id
+            LIMIT 1
             OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
             OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
             OPTIONAL MATCH (c)-[:DEPENDS_ON]->(dep:Class)

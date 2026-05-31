@@ -1,7 +1,7 @@
 from pipeline.graph.schema import get_driver
 
 
-def get_affected_classes(changed_class_names: list[str]) -> dict:
+def get_affected_classes(changed_class_names: list[str], repo_id: str = "spring-petclinic") -> dict:
     """
     Given changed class names, find all affected classes:
     - The changed classes themselves
@@ -18,18 +18,18 @@ def get_affected_classes(changed_class_names: list[str]) -> dict:
         for name in changed_class_names:
             # Find classes that depend on this class
             result = session.run("""
-                MATCH (dependent:Class)-[:DEPENDS_ON]->(changed:Class {name: $name})
+                MATCH (dependent:Class {repo_id: $repo_id})-[:DEPENDS_ON]->(changed:Class {repo_id: $repo_id, name: $name})
                 RETURN dependent.name AS name
-            """, name=name)
+            """, repo_id=repo_id, name=name)
 
             for row in result:
                 affected["dependents"].add(row["name"])
 
             # Find classes this class depends on (for context)
             result2 = session.run("""
-                MATCH (changed:Class {name: $name})-[:DEPENDS_ON]->(dep:Class)
+                MATCH (changed:Class {repo_id: $repo_id, name: $name})-[:DEPENDS_ON]->(dep:Class {repo_id: $repo_id})
                 RETURN dep.name AS name
-            """, name=name)
+            """, repo_id=repo_id, name=name)
 
             for row in result2:
                 affected["dependents"].add(row["name"])
@@ -43,7 +43,7 @@ def get_affected_classes(changed_class_names: list[str]) -> dict:
     return {k: list(v) for k, v in affected.items()}
 
 
-def get_class_details_from_neo4j(class_names: list[str]) -> list[dict]:
+def get_class_details_from_neo4j(class_names: list[str], repo_id: str = "spring-petclinic") -> list[dict]:
     """Fetch full class details from Neo4j for re-summarization."""
     driver = get_driver()
     classes = []
@@ -51,7 +51,7 @@ def get_class_details_from_neo4j(class_names: list[str]) -> list[dict]:
     with driver.session() as session:
         for name in class_names:
             result = session.run("""
-                MATCH (c:Class {name: $name})
+                MATCH (c:Class {repo_id: $repo_id, name: $name})
                 OPTIONAL MATCH (c)-[:HAS_METHOD]->(m:Method)
                 OPTIONAL MATCH (c)-[:HAS_FIELD]->(f:Field)
                 RETURN
@@ -71,7 +71,7 @@ def get_class_details_from_neo4j(class_names: list[str]) -> list[dict]:
                         type: f.type,
                         annotations: f.annotations
                     }) AS fields
-            """, name=name).single()
+            """, repo_id=repo_id, name=name).single()
 
             if result:
                 data = dict(result)
