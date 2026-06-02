@@ -10,6 +10,7 @@ runs.
 from __future__ import annotations
 
 import threading
+import uuid
 from pathlib import Path
 
 from pipeline.graph.api_impact import run_api_impact_nightly
@@ -24,6 +25,9 @@ from pipeline.ingestion.ts_analysis_client import analyse_files as analyze_ts_fi
 from pipeline.ingestion.ts_analysis_client import is_service_healthy as is_ts_analysis_healthy
 from pipeline.wiki.summarizer import summarize_methods
 from pipeline.delta.updater import update_wiki_summary
+from pipeline.embeddings.embedder import build_method_text, embed_batch
+from pipeline.embeddings.vector_store import COLLECTION, get_client, ensure_required_collections
+from qdrant_client.models import PointStruct
 
 
 def _repo_dir(repo_id: str) -> Path:
@@ -38,7 +42,61 @@ def _clone_if_needed(repo_url: str, repo_id: str) -> Path | None:
     return target_dir
 
 
-def _run_java_pipeline(driver, repo_id: str, repo_path: Path) -> dict:
+def _embed_methods_to_qdrant(
+    analysis_results: list[dict],
+    method_summaries: dict[str, dict[str, str]],
+    repo_id: str,
+    suite_id: str,
+) -> dict:
+    method_rows: list[dict] = []
+    texts: list[str] = []
+
+    for file_result in analysis_results:
+        for cls in file_result.get("classes", []):
+            cls_name = cls.get("name", "")
+            summaries = method_summaries.get(cls_name, {})
+            for method in cls.get("methods", []):
+                logic = summaries.get(method.get("name", ""), "")
+                texts.append(build_method_text(cls_name, method, logic))
+                method_rows.append(
+                    {
+                        "cls_name": cls_name,
+                        "method": method,
+                        "logic_summary": logic,
+                    }
+                )
+
+    if not texts:
+        return {"qdrant_vectors": 0, "qdrant_status": "skipped-no-methods"}
+
+    vectors = embed_batch(texts)
+    points = []
+    for row, vector in zip(method_rows, vectors):
+        method = row["method"]
+        points.append(
+            PointStruct(
+                id=str(uuid.uuid4()),
+                vector=vector,
+                payload={
+                    "name": method.get("name", ""),
+                    "class_name": row["cls_name"],
+                    "return_type": method.get("return_type", ""),
+                    "annotations": method.get("annotations", []),
+                    "logic_summary": row.get("logic_summary", ""),
+                    "repo_id": repo_id,
+                    "suite_id": suite_id,
+                    "unit_type": "method",
+                },
+            )
+        )
+
+    client = get_client()
+    ensure_required_collections(client)
+    client.upsert(collection_name=COLLECTION, points=points)
+    return {"qdrant_vectors": len(points), "qdrant_status": "ok"}
+
+
+def _run_java_pipeline(driver, repo_id: str, suite_id: str, repo_path: Path) -> dict:
     java_files = get_java_files(str(repo_path))
     if not java_files or not is_java_analysis_healthy():
         return {"classes": 0, "methods": 0, "fields": 0, "contracts": 0}
@@ -49,7 +107,7 @@ def _run_java_pipeline(driver, repo_id: str, repo_path: Path) -> dict:
 
     from pipeline.graph.writer import write_analysis
 
-    graph_stats = write_analysis(driver, analysis_results)
+    graph_stats = write_analysis(driver, analysis_results, repo_id=repo_id, suite_id=suite_id)
 
     class_lookup = {
         cls["name"]: cls
@@ -69,13 +127,19 @@ def _run_java_pipeline(driver, repo_id: str, repo_path: Path) -> dict:
     with driver.session() as session:
         from pipeline.graph.method_writer import write_all_method_data
 
-        method_stats = write_all_method_data(driver, analysis_results, method_summaries)
-    contract_count = write_all_api_contracts(driver, analysis_results, repo_id)
+        method_stats = write_all_method_data(driver, analysis_results, method_summaries, repo_id=repo_id)
+    contract_count = write_all_api_contracts(driver, analysis_results, repo_id=repo_id, suite_id=suite_id)
     impact_count = run_api_impact_nightly(driver)
+
+    try:
+        qdrant_stats = _embed_methods_to_qdrant(analysis_results, method_summaries, repo_id, suite_id)
+    except Exception as exc:
+        qdrant_stats = {"qdrant_vectors": 0, "qdrant_status": f"failed: {exc}"}
 
     return {
         **graph_stats,
         **method_stats,
+        **qdrant_stats,
         "contracts": contract_count,
         "impact_nodes": impact_count,
     }
@@ -92,7 +156,7 @@ def _run_ts_pipeline(driver, repo_id: str, suite_id: str, repo_path: Path) -> di
 
     from pipeline.graph.writer import write_analysis
 
-    graph_stats = write_analysis(driver, analysis_results)
+    graph_stats = write_analysis(driver, analysis_results, repo_id=repo_id, suite_id=suite_id)
 
     class_lookup = {
         cls["name"]: cls
@@ -111,7 +175,7 @@ def _run_ts_pipeline(driver, repo_id: str, suite_id: str, repo_path: Path) -> di
 
     from pipeline.graph.method_writer import write_all_method_data
 
-    method_stats = write_all_method_data(driver, analysis_results, method_summaries)
+    method_stats = write_all_method_data(driver, analysis_results, method_summaries, repo_id=repo_id)
 
     # If a backend repo already exists in the same suite, use its contracts for FE matching.
     with driver.session() as session:
@@ -134,7 +198,12 @@ def _run_ts_pipeline(driver, repo_id: str, suite_id: str, repo_path: Path) -> di
     if backend_row:
         consumes_stats = run_api_matching(driver, repo_id, backend_row["repo_id"], analysis_results)
 
-    return {**graph_stats, **method_stats, **consumes_stats}
+    try:
+        qdrant_stats = _embed_methods_to_qdrant(analysis_results, method_summaries, repo_id, suite_id)
+    except Exception as exc:
+        qdrant_stats = {"qdrant_vectors": 0, "qdrant_status": f"failed: {exc}"}
+
+    return {**graph_stats, **method_stats, **consumes_stats, **qdrant_stats}
 
 
 def bootstrap_project(
@@ -156,7 +225,7 @@ def bootstrap_project(
 
         if repo_path and repo_path.exists():
             results["repo_path"] = str(repo_path)
-            results.update(_run_java_pipeline(driver, repo_id, repo_path))
+            results.update(_run_java_pipeline(driver, repo_id, suite_id, repo_path))
             results.update(_run_ts_pipeline(driver, repo_id, suite_id, repo_path))
 
         if confluence_link.strip():

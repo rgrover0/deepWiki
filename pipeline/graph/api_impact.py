@@ -22,13 +22,17 @@ def run_api_impact_nightly(driver) -> int:
             impact_id = f"impact:{api_id}"
 
             consumers = session.run("""
-                MATCH (r:Repository)-[c:CONSUMES]->(a:APIContract {id: $api_id})
-                RETURN r.id              AS repo_id,
-                       r.language        AS language,
-                       c.confidence      AS confidence,
-                       c.caller_class    AS caller_class,
-                       c.caller_method   AS caller_method
+                MATCH (a:APIContract {id: $api_id})
+                OPTIONAL MATCH (r:Repository)-[c:CONSUMES]->(a)
+                RETURN r.id                         AS repo_id,
+                       coalesce(r.language, '')     AS language,
+                       coalesce(c.confidence, 0.0)  AS confidence,
+                       coalesce(c.caller_class, '') AS caller_class,
+                       coalesce(c.caller_method, '') AS caller_method
             """, api_id=api_id).data()
+
+            # OPTIONAL MATCH returns one null row when no consumers exist.
+            consumers = [row for row in consumers if row.get("repo_id")]
 
             session.run("""
                 MERGE (i:APIContractImpact {id: $impact_id})

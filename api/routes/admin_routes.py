@@ -544,11 +544,12 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
         _step_start(job, 5)
         try:
             from pipeline.embeddings.embedder import embed_batch, build_method_text
-            from pipeline.embeddings.vector_store import get_client, COLLECTION
+            from pipeline.embeddings.vector_store import get_client, COLLECTION, ensure_required_collections
             from qdrant_client.models import PointStruct
             import uuid as _uuid
 
             client = get_client()
+            ensure_required_collections(client)
             texts: list[str] = []
             payloads: list[dict] = []
             for fr in analysis_results:
@@ -567,16 +568,19 @@ def _run_ingestion(repo_id: str, repo_url: str, suite_id: str, confluence_link: 
                             "method_name": method["name"],
                         })
             if texts:
+                _log(job, f"Embedding {len(texts)} methods for Qdrant...")
                 vectors = embed_batch(texts)
                 points = [
                     PointStruct(id=str(_uuid.uuid4()), vector=v, payload=p)
                     for v, p in zip(vectors, payloads)
                 ]
+                _log(job, f"Upserting {len(points)} vectors into '{COLLECTION}'")
                 client.upsert(collection_name=COLLECTION, points=points)
                 _step_done(job, 5, f"{len(points)} vectors stored")
             else:
                 _step_skip(job, 5, "No methods to embed")
         except Exception as exc:
+            _log(job, f"Qdrant embed step failed: {exc}")
             _step_skip(job, 5, f"Qdrant unavailable — {exc}")
 
         # ── Step 6: Match API contracts FE ↔ BE (non-critical) ────────────

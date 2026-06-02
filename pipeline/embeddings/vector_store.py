@@ -86,6 +86,11 @@ def setup_all_collections(client: QdrantClient):
     ensure_filter_indexes(client)
 
 
+def ensure_required_collections(client: QdrantClient) -> None:
+    """Idempotent guard for workflows that may run before startup bootstrap."""
+    setup_all_collections(client)
+
+
 def ensure_filter_indexes(client: QdrantClient) -> None:
     """Ensure payload indexes exist for fields used in filters."""
     existing = {c.name for c in client.get_collections().collections}
@@ -262,9 +267,9 @@ def semantic_search(
         ).points
     except UnexpectedResponse as exc:
         error_text = str(exc).lower()
-        if "index required" in error_text:
-            # Self-heal older collections that were created before index bootstrap existed.
-            ensure_filter_indexes(client)
+        if "index required" in error_text or "doesn't exist" in error_text or "not found" in error_text:
+            # Self-heal older/missing collections for local cold starts.
+            ensure_required_collections(client)
             results = client.query_points(
                 collection_name=COLLECTION,
                 query=query_vector,

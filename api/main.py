@@ -83,6 +83,35 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/db-health")
+def db_health():
+    """Check Neo4j and Qdrant connectivity — useful for local dev debugging."""
+    result = {}
+
+    # Neo4j
+    try:
+        from pipeline.graph.schema import get_driver
+        driver = get_driver()
+        with driver.session() as session:
+            session.run("RETURN 1")
+        driver.close()
+        result["neo4j"] = "ok"
+    except Exception as exc:
+        result["neo4j"] = f"error: {exc}"
+
+    # Qdrant
+    try:
+        from pipeline.embeddings.vector_store import get_client
+        client = get_client()
+        cols = [c.name for c in client.get_collections().collections]
+        result["qdrant"] = f"ok ({len(cols)} collections)"
+    except Exception as exc:
+        result["qdrant"] = f"error: {exc}"
+
+    result["overall"] = "ok" if all(v == "ok" or v.startswith("ok") for v in result.values()) else "degraded"
+    return result
+
+
 @app.get("/stats")
 def stats():
     from pipeline.graph.schema import get_driver
