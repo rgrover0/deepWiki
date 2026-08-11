@@ -12,11 +12,11 @@ import time
 from fastapi import APIRouter
 from pydantic import BaseModel
 from qdrant_client.http.exceptions import UnexpectedResponse
-from pipeline.embeddings.embedder import embed_text
-from pipeline.embeddings.vector_store import get_client, semantic_search
-from pipeline.graph.schema import get_driver
+from core.embeddings.embedder import embed_text
+from core.embeddings.vector_store import get_client, semantic_search
+from core.graph.schema import get_driver
 from api.intent_classifier import classify_intent, extract_entry_point
-from api.model_router import route as model_route
+from core.llm.model_router import route as model_route
 from api import feedback as fb
 
 router = APIRouter()
@@ -188,7 +188,7 @@ def ask(req: AskRequest):
     confluence_section = ""
     confluence_sources: list[str] = []
     try:
-        from pipeline.ingestion.confluence_ingester import search_confluence
+        from core.confluence_search import search_confluence
         conf_hits = search_confluence(query_vector, top_k=2, suite_id=req.suite_id)
         if conf_hits:
             parts = ["\nCONFLUENCE DESIGN NOTES:"]

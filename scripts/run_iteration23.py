@@ -181,7 +181,7 @@ except Exception as e:
 # -- 9. Neo4j smoke ----------------------------------------------------------
 print("\n[9/9] Neo4j smoke: ConfluencePage node round-trip:")
 try:
-    from pipeline.graph.schema import get_driver
+    from core.graph.schema import get_driver
     from pipeline.ingestion.confluence_ingester import write_confluence_node
 
     driver = get_driver()

@@ -17,7 +17,7 @@ from pipeline.graph.api_impact import run_api_impact_nightly
 from pipeline.graph.api_matcher import run_api_matching
 from pipeline.graph.api_writer import write_all_api_contracts
 from pipeline.graph.method_writer import write_all_method_data
-from pipeline.graph.schema import get_driver
+from core.graph.schema import get_driver
 from pipeline.ingestion.git_reader import clone_repo, get_java_files
 from pipeline.ingestion.java_analysis_client import analyze_files as analyze_java_files
 from pipeline.ingestion.java_analysis_client import is_service_healthy as is_java_analysis_healthy
@@ -25,8 +25,8 @@ from pipeline.ingestion.ts_analysis_client import analyse_files as analyze_ts_fi
 from pipeline.ingestion.ts_analysis_client import is_service_healthy as is_ts_analysis_healthy
 from pipeline.wiki.summarizer import summarize_methods
 from pipeline.delta.updater import update_wiki_summary
-from pipeline.embeddings.embedder import build_method_text, embed_batch
-from pipeline.embeddings.vector_store import COLLECTION, get_client, ensure_required_collections
+from core.embeddings.embedder import build_method_text, embed_batch
+from core.embeddings.vector_store import COLLECTION, get_client, ensure_required_collections
 from qdrant_client.models import PointStruct
 
 

@@ -40,7 +40,7 @@ print("  OK")
 # ── 2. Suite writer ────────────────────────────────────────
 print("\n[2/5] Suite writer (Neo4j):")
 try:
-    from pipeline.graph.schema import get_driver
+    from core.graph.schema import get_driver
     from pipeline.graph.suite_writer import write_suite_config
 
     driver = get_driver()

@@ -1,6 +1,6 @@
-from pipeline.graph.schema import get_driver
-from pipeline.embeddings.embedder import embed_text, embed_batch, build_class_text
-from pipeline.embeddings.vector_store import (
+from core.graph.schema import get_driver
+from core.embeddings.embedder import embed_text, embed_batch, build_class_text
+from core.embeddings.vector_store import (
     get_client, setup_collection, store_class_embeddings, semantic_search
 )
 

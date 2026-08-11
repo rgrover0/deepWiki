@@ -52,7 +52,7 @@ except Exception as e:
 # 3. Qdrant — all 8 collections
 try:
     from qdrant_client import QdrantClient
-    from pipeline.embeddings.vector_store import ALL_COLLECTIONS
+    from core.embeddings.vector_store import ALL_COLLECTIONS
 
     url     = os.getenv("QDRANT_HOST")
     api_key = os.getenv("QDRANT_API_KEY")

@@ -1,4 +1,4 @@
-from pipeline.graph.schema import get_driver
+from core.graph.schema import get_driver
 
 
 def get_affected_classes(changed_class_names: list[str], repo_id: str = "spring-petclinic") -> dict:

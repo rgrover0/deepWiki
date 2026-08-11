@@ -1,5 +1,5 @@
 import json
-from pipeline.graph.schema import get_driver, setup_schema
+from core.graph.schema import get_driver, setup_schema
 from pipeline.graph.writer import write_analysis
 
 print("=" * 50)

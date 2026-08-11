@@ -49,7 +49,7 @@ def bootstrap_qdrant_collections() -> None:
         return
 
     try:
-        from pipeline.embeddings.vector_store import get_client, setup_all_collections
+        from core.embeddings.vector_store import get_client, setup_all_collections
 
         client = get_client()
         setup_all_collections(client)
@@ -90,7 +90,7 @@ def db_health():
 
     # Neo4j
     try:
-        from pipeline.graph.schema import get_driver
+        from core.graph.schema import get_driver
         driver = get_driver()
         with driver.session() as session:
             session.run("RETURN 1")
@@ -101,7 +101,7 @@ def db_health():
 
     # Qdrant
     try:
-        from pipeline.embeddings.vector_store import get_client
+        from core.embeddings.vector_store import get_client
         client = get_client()
         cols = [c.name for c in client.get_collections().collections]
         result["qdrant"] = f"ok ({len(cols)} collections)"
@@ -114,7 +114,7 @@ def db_health():
 
 @app.get("/stats")
 def stats():
-    from pipeline.graph.schema import get_driver
+    from core.graph.schema import get_driver
     driver = get_driver()
     with driver.session() as session:
         counts = session.run("""

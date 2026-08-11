@@ -22,11 +22,11 @@ load_dotenv()
 
 from pipeline.ingestion.git_reader import get_java_files
 from pipeline.ingestion.java_analysis_client import analyze_files, is_service_healthy
-from pipeline.graph.schema import get_driver
+from core.graph.schema import get_driver
 from pipeline.graph.method_writer import write_all_method_data
 from pipeline.wiki.summarizer import summarize_methods
-from pipeline.embeddings.embedder import build_method_text, embed_batch
-from pipeline.embeddings.vector_store import get_client, store_method_embeddings
+from core.embeddings.embedder import build_method_text, embed_batch
+from core.embeddings.vector_store import get_client, store_method_embeddings
 
 REPO_PATH = "repos/spring-petclinic"
 

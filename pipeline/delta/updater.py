@@ -1,15 +1,15 @@
 import os
 import time
 from pipeline.ingestion.static_analysis import analyze_file
-from pipeline.graph.schema import get_driver
+from core.graph.schema import get_driver
 from pipeline.graph.writer import (
     write_class, write_methods, write_fields,
     write_package, write_dependencies
 )
 from pipeline.wiki.summarizer import summarize_class
 from pipeline.wiki.diagram_gen import generate_wiki_page
-from pipeline.embeddings.embedder import embed_text, build_class_text
-from pipeline.embeddings.vector_store import get_client, COLLECTION
+from core.embeddings.embedder import embed_text, build_class_text
+from core.embeddings.vector_store import get_client, COLLECTION
 from qdrant_client.models import PointStruct
 
 

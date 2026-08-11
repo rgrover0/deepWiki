@@ -18,11 +18,11 @@ load_dotenv()
 
 from pipeline.ingestion.git_reader import get_java_files
 from pipeline.ingestion.java_analysis_client import analyze_files, is_service_healthy
-from pipeline.graph.schema import get_driver
+from core.graph.schema import get_driver
 from pipeline.graph.api_writer import write_all_api_contracts
 from pipeline.graph.api_impact import run_api_impact_nightly
-from pipeline.embeddings.embedder import embed_batch
-from pipeline.embeddings.vector_store import get_client
+from core.embeddings.embedder import embed_batch
+from core.embeddings.vector_store import get_client
 from qdrant_client.models import PointStruct
 import zlib
 

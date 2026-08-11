@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from pipeline.graph.schema import get_driver
-from pipeline.embeddings.embedder import embed_text
-from pipeline.embeddings.vector_store import get_client, semantic_search
+from core.graph.schema import get_driver
+from core.embeddings.embedder import embed_text
+from core.embeddings.vector_store import get_client, semantic_search
 
 router = APIRouter()
 

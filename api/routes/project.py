@@ -12,14 +12,13 @@ DELETE /project/suite/{id}     detach-delete a Suite node
 
 import re
 import uuid
-from threading import Thread
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from pipeline.graph.schema import get_driver
-from pipeline.project_bootstrap import start_project_bootstrap
+from api.pipeline_gateway import run_cli
+from core.graph.schema import get_driver
 
 router = APIRouter()
 
@@ -215,11 +214,17 @@ def create_project(body: CreateRepoRequest):
         driver.close()
 
     if body.repository_url.strip() or body.confluence_link.strip():
-        start_project_bootstrap(
-            repo_id=repo_id,
-            repo_url=body.repository_url.strip(),
-            suite_id=body.suite_id,
-            confluence_link=body.confluence_link.strip(),
+        run_cli(
+            "bootstrap",
+            "--repo-id",
+            repo_id,
+            "--repo-url",
+            body.repository_url.strip(),
+            "--suite-id",
+            body.suite_id,
+            "--confluence-link",
+            body.confluence_link.strip(),
+            background=True,
         )
 
     return {
