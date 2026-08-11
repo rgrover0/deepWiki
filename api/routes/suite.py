@@ -8,7 +8,7 @@ POST /suite/bootstrap       write suites from config/suites.json into Neo4j
 
 from fastapi import APIRouter, HTTPException
 from neo4j.exceptions import AuthError, ServiceUnavailable, Neo4jError
-from pipeline.graph.schema import get_driver
+from core.graph.schema import get_driver
 
 router = APIRouter()
 
@@ -103,17 +103,10 @@ def get_suite(suite_id: str):
 
 @router.post("/bootstrap")
 def bootstrap_suites():
-    """Write all suites from config/suites.json into Neo4j."""
-    from pipeline.graph.suite_writer import write_suite_config
-    driver = get_driver()
+    """Write all suites from config/suites.json into Neo4j via pipeline CLI."""
+    from api.pipeline_gateway import PipelineGatewayError, run_cli
+
     try:
-        counts = write_suite_config(driver)
-        return {"status": "ok", **counts}
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-    except (AuthError, ServiceUnavailable, Neo4jError) as exc:
-        raise _neo4j_503(exc)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"suite bootstrap failed: {exc}")
-    finally:
-        driver.close()
+        return run_cli("suite-bootstrap", timeout=120)
+    except PipelineGatewayError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

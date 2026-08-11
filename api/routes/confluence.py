@@ -11,7 +11,7 @@ PUT  /confluence/flags/{flag_id}/resolve — mark a flag resolved
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from pipeline.graph.schema import get_driver
+from core.graph.schema import get_driver
 
 router = APIRouter()
 
@@ -26,22 +26,19 @@ class IngestRequest(BaseModel):
 @router.post("/ingest")
 def ingest_confluence_page(req: IngestRequest):
     """
-    Fetch, classify, embed, align, and store a Confluence page.
-    Returns ingestion summary with content_type, collection, alignment scores, flags.
+    Fetch, classify, embed, align, and store a Confluence page via pipeline CLI.
     """
-    from pipeline.ingestion.confluence_ingester import ingest_page
+    from api.pipeline_gateway import PipelineGatewayError, run_cli
+
     try:
-        result = ingest_page(
-            url_or_id=req.url,
-            category=req.category,
-            module_tags=req.module_tags,
-            suite_id=req.suite_id,
+        return run_cli(
+            "confluence-ingest",
+            payload=req.model_dump(),
+            timeout=300,
         )
-        return {"ok": True, "result": result}
-    except EnvironmentError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except PipelineGatewayError as e:
+        status = 503 if "Environment" in str(e) else 500
+        raise HTTPException(status_code=status, detail=str(e)) from e
 
 
 @router.get("/pages")

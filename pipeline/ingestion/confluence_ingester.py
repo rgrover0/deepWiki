@@ -137,7 +137,7 @@ Reply with ONLY the type name, nothing else."""
 
 def classify_content(title: str, body_text: str) -> str:
     """Return content_type string. Falls back to 'general' on LLM failure."""
-    from api.model_router import route as model_route
+    from core.llm.model_router import route as model_route
     excerpt = body_text[:500]
     prompt  = _CLASSIFY_PROMPT.format(title=title, excerpt=excerpt)
     try:
@@ -171,8 +171,8 @@ def embed_and_store(
         logger.info("confluence: server_db page '%s' — vault only, skipping Qdrant", page_id)
         return None
 
-    from pipeline.embeddings.embedder import embed_text
-    from pipeline.embeddings.vector_store import get_client
+    from core.embeddings.embedder import embed_text
+    from core.embeddings.vector_store import get_client
     from qdrant_client.models import PointStruct
 
     text    = f"Title: {title}\n\n{body_text}"
@@ -209,8 +209,8 @@ def compute_alignment(page_text: str, module_ids: list[str], driver) -> dict[str
     Approach: embed page, search code_units collection filtered by module_ids,
     then compute avg cosine similarity (normalized vectors -> dot product).
     """
-    from pipeline.embeddings.embedder import embed_text
-    from pipeline.embeddings.vector_store import get_client
+    from core.embeddings.embedder import embed_text
+    from core.embeddings.vector_store import get_client
     from qdrant_client.models import Filter, FieldCondition, MatchAny
 
     page_vec = embed_text(page_text[:3000])
@@ -359,7 +359,7 @@ def ingest_page(
     Returns:
         Summary dict with page_id, content_type, collection, alignment scores, flags
     """
-    from pipeline.graph.schema import get_driver
+    from core.graph.schema import get_driver
 
     module_tags = module_tags or []
     result: dict = {}
@@ -428,7 +428,7 @@ def search_confluence(
     Search Confluence Qdrant collections for relevant pages.
     Returns list of {page_id, title, body_text, page_url, content_type, score}.
     """
-    from pipeline.embeddings.vector_store import get_client
+    from core.embeddings.vector_store import get_client
     from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchAny
 
     client     = get_client()

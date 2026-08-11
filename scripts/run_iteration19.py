@@ -159,7 +159,7 @@ if match_ok:
 # ── 7. Neo4j smoke test ───────────────────────────────────
 print("\n[7/7] Neo4j smoke test (CONSUMES edge round-trip):")
 try:
-    from pipeline.graph.schema import get_driver
+    from core.graph.schema import get_driver
     from pipeline.graph.api_matcher import write_consumes_edges
 
     driver = get_driver()

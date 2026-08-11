@@ -141,7 +141,7 @@ else:
 # ── 8. Neo4j integration smoke test ────────────────────
 print("\n[8/8] Neo4j cross-repo query (CONSUMES -> APIContract <- EXPOSES):")
 try:
-    from pipeline.graph.schema import get_driver
+    from core.graph.schema import get_driver
 
     driver = get_driver()
     with driver.session() as session:

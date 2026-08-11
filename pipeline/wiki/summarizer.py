@@ -2,7 +2,7 @@ import json
 import time
 from pathlib import Path
 from dotenv import load_dotenv
-from api.model_router import route as model_route
+from core.llm.model_router import route as model_route
 
 load_dotenv()
 

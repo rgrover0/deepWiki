@@ -19,8 +19,8 @@ Token ceiling: 600 tokens (2000 chars).  Raw estimate added to response.
 
 from fastapi import APIRouter
 from pydantic import BaseModel
-from pipeline.graph.schema import get_driver
-from api.model_router import route as model_route
+from core.graph.schema import get_driver
+from core.llm.model_router import route as model_route
 from dotenv import load_dotenv
 
 load_dotenv()

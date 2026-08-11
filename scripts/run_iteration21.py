@@ -149,7 +149,7 @@ for pattern, desc in checks:
 
 # -- 8. Unit tests: model_router ----------------------------------------------
 print("\n[8/9] Unit tests: model_router.route():")
-from api.model_router import route, TASK_MODEL_MAP, LLMAdapter, GroqAdapter, _build_adapter
+from core.llm.model_router import route, TASK_MODEL_MAP, LLMAdapter, GroqAdapter, _build_adapter
 import os
 
 test_ok  = True
@@ -217,7 +217,7 @@ if not ok:
 print("\n[9/9] Neo4j smoke: Feedback node round-trip:")
 try:
     from api.feedback import record_query, new_query_id
-    from pipeline.graph.schema import get_driver
+    from core.graph.schema import get_driver
 
     qid = new_query_id()
     record_query(qid, "Test question from run_iteration21.py",

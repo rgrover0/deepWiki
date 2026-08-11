@@ -25,7 +25,7 @@ import uuid
 
 from fastapi import APIRouter
 from pydantic import BaseModel
-from pipeline.graph.schema import get_driver
+from core.graph.schema import get_driver
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

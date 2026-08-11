@@ -11,8 +11,8 @@ Run once. Safe to re-run — all operations are idempotent except migration
 (which skips if legacy collection is already gone).
 """
 
-from pipeline.graph.schema import get_driver, setup_schema
-from pipeline.embeddings.vector_store import get_client, setup_all_collections, migrate_from_legacy
+from core.graph.schema import get_driver, setup_schema
+from core.embeddings.vector_store import get_client, setup_all_collections, migrate_from_legacy
 
 print("=" * 60)
 print("DeepWiki — Iteration 12: Schema Upgrade + Qdrant Migration")

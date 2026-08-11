@@ -1,9 +1,9 @@
 import os
-from pipeline.graph.schema import get_driver
+from core.graph.schema import get_driver
 from pipeline.wiki.summarizer import summarize_all
 from pipeline.wiki.diagram_gen import generate_mermaid_diagram, generate_wiki_page
-from pipeline.embeddings.embedder import embed_batch
-from pipeline.embeddings.vector_store import (
+from core.embeddings.embedder import embed_batch
+from core.embeddings.vector_store import (
     get_client, setup_collection, store_class_embeddings
 )
 
